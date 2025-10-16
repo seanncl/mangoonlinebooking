@@ -170,43 +170,51 @@ export default function ServiceSelection() {
       <BookingHeader />
 
       <main className="flex-1 pb-24">
-        <div className="container max-w-6xl mx-auto px-4 py-6">
-          {/* Category Filters */}
-          <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
-            {(Object.keys(categoryConfig) as ServiceCategory[]).map((category) => {
-              const config = categoryConfig[category];
-              const isSelected = selectedCategory === category;
-              return (
-                <Button
-                  key={category}
-                  variant={isSelected ? 'default' : 'outline'}
-                  onClick={() => setSelectedCategory(isSelected ? null : category)}
-                  className="flex-shrink-0 gap-2"
-                >
-                  {config.icon}
-                  {config.label}
-                </Button>
-              );
-            })}
-          </div>
+        {/* Sticky Category & Search Section */}
+        <div className="sticky top-12 z-40 bg-background border-b pb-4">
+          <div className="container max-w-6xl mx-auto px-4 pt-4">
+            {/* Category Filters */}
+            <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+              {(Object.keys(categoryConfig) as ServiceCategory[]).map((category) => {
+                const config = categoryConfig[category];
+                const isSelected = selectedCategory === category;
+                return (
+                  <Button
+                    key={category}
+                    variant={isSelected ? 'default' : 'outline'}
+                    onClick={() => setSelectedCategory(isSelected ? null : category)}
+                    className={cn(
+                      "flex-shrink-0 gap-2 rounded-2xl px-6 h-14 min-w-[120px]",
+                      isSelected && "bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500"
+                    )}
+                  >
+                    {config.icon}
+                    {config.label}
+                  </Button>
+                );
+              })}
+            </div>
 
-          {/* Search Bar */}
-          <div className="relative mb-8">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search for services..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12"
-            />
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search for services..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12 rounded-xl"
+              />
+            </div>
           </div>
+        </div>
+
+        <div className="container max-w-6xl mx-auto px-4 py-6">
 
           {/* Services List */}
           {Object.entries(groupedServices).map(([category, categoryServices]) => (
             <div key={category} className="mb-8">
-              <h2 className="text-xl font-bold mb-4 capitalize flex items-center gap-2">
-                {categoryConfig[category as ServiceCategory]?.icon}
+              <h2 className="text-2xl font-bold mb-4 capitalize">
                 {categoryConfig[category as ServiceCategory]?.label || category.replace('_', ' ')}
               </h2>
               <div className="space-y-3">
@@ -253,8 +261,11 @@ export default function ServiceSelection() {
                           </div>
 
                           {/* Inline Price Display */}
-                          <div className="text-sm text-muted-foreground">
-                            💵 ${service.price_cash} · 💳 ${service.price_card} ⏱️ {service.duration_minutes} min
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>💵 ${service.price_cash.toFixed(2)}</span>
+                            <span>•</span>
+                            <span>💳 ${service.price_card.toFixed(2)}</span>
+                            <span>⏱️ {service.duration_minutes} min</span>
                           </div>
 
                           {/* Collapsible Description */}
@@ -272,18 +283,18 @@ export default function ServiceSelection() {
                               variant="destructive"
                               size="icon"
                               onClick={() => handleRemoveService(service.id)}
-                              className="h-9 w-9 bg-red-500 hover:bg-red-600"
+                              className="h-12 w-12 rounded-full bg-red-500 hover:bg-red-600"
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-5 w-5" />
                             </Button>
                           ) : (
                             <Button
                               variant="default"
                               size="icon"
                               onClick={() => handleAddService(service)}
-                              className="h-9 w-9 bg-green-500 hover:bg-green-600"
+                              className="h-12 w-12 rounded-full bg-cyan-500 hover:bg-cyan-600"
                             >
-                              <Plus className="h-4 w-4" />
+                              <Plus className="h-5 w-5" />
                             </Button>
                           )}
                         </div>
