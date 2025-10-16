@@ -372,13 +372,15 @@ export default function ServiceSelection() {
                         </p>
                       )}
                       
-                      <div className="flex gap-3 text-sm">
-                        <span className="text-muted-foreground">
-                          💵 <span className="line-through">${addOn.price_cash}</span> ${(addOn.price_cash - addOn.discount_when_bundled).toFixed(2)}
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-bold text-foreground">
+                          💵 <span className="line-through font-normal">${addOn.price_cash}</span> ${(addOn.price_cash - addOn.discount_when_bundled).toFixed(2)}
                         </span>
-                        <span className="text-muted-foreground">
-                          💳 <span className="line-through">${addOn.price_card}</span> ${discountedPrice.toFixed(2)}
+                        <span className="text-muted-foreground">•</span>
+                        <span className="font-bold text-foreground">
+                          💳 <span className="line-through font-normal">${addOn.price_card}</span> ${discountedPrice.toFixed(2)}
                         </span>
+                        <span className="text-[0.7rem] text-muted-foreground ml-1">⏱️ {addOn.duration_minutes}min</span>
                       </div>
                       {addOn.discount_when_bundled > 0 && (
                         <p className="text-xs text-success mt-1">
