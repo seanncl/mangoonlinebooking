@@ -198,8 +198,8 @@ export default function StaffSelection() {
           {/* Staff Selection Section */}
           <div className="space-y-4">
             <div>
-              <h1 className="text-xl font-bold mb-1">Choose Your Technician</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-lg font-bold mb-1">Choose Your Technician</h1>
+              <p className="text-xs text-muted-foreground">
                 Choose who you'd like to perform your service
               </p>
             </div>
