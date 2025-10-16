@@ -62,9 +62,8 @@ export function HorizontalDatePicker({
         <div className="flex gap-2">
           <Popover open={showFullCalendar} onOpenChange={setShowFullCalendar}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8">
                 <CalendarIcon className="h-4 w-4" />
-                Full Calendar
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
