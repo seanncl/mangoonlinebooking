@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Clock, Users, Sparkles, AlertCircle, GripVertical, Info, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { bookingAPI } from '@/services/booking-api';
@@ -302,9 +303,24 @@ export default function TimeSelection() {
               const isSelected = selectedTime === time;
               return <button key={time} onClick={() => isAvailable && handleTimeSelect(time)} disabled={!isAvailable} className={`relative px-3 py-2.5 rounded-xl border-2 text-xs font-medium transition-all ${isSelected ? 'bg-primary text-primary-foreground border-primary shadow-md' : isAvailable ? 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border' : 'bg-muted/30 border-muted text-muted-foreground cursor-not-allowed opacity-50'}`}>
                         {time}
-                        {isBestFit && isAvailable && <Badge variant={isSelected ? "secondary" : "default"} className="absolute -top-2 -right-2 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground">
-                            ✨
-                          </Badge>}
+                        {isBestFit && isAvailable && <HoverCard>
+                            <HoverCardTrigger asChild>
+                              <Badge variant={isSelected ? "secondary" : "default"} className="absolute -top-2 -right-2 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground cursor-help">
+                                ✨ Best
+                              </Badge>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="w-80">
+                              <div className="flex gap-3">
+                                <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-sm font-medium mb-1">About Best Fit Times</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Best Fit times help optimize salon scheduling and availability
+                                  </p>
+                                </div>
+                              </div>
+                            </HoverCardContent>
+                          </HoverCard>}
                       </button>;
             };
             return <div className="space-y-5">
@@ -349,20 +365,8 @@ export default function TimeSelection() {
                     </div>;
           })()}
 
-                {/* Legend and Footer Info */}
-                <div className="mt-8 space-y-3">
-                  
-                
-                  <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
-                    <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium mb-1">About Best Fit Times</p>
-                      <p className="text-xs text-muted-foreground">
-                        Best Fit times help optimize salon scheduling and availability
-                      </p>
-                    </div>
-                  </div>
-                  
+                {/* Footer Info */}
+                <div className="mt-8">
                   <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                     <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div>
