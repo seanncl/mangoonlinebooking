@@ -308,10 +308,10 @@ export const CartSheet = () => {
               className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
               onClick={() => {
                 setCartOpen(false);
-                navigate('/time');
+                navigate('/staff');
               }}
             >
-              Proceed to Checkout
+              Proceed to Select Staff
             </Button>
           </div>
         )}
