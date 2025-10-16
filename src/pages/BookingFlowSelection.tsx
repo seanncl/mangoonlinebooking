@@ -3,6 +3,7 @@ import { ArrowLeft, Sparkles, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useBooking } from '@/context/BookingContext';
+import { UserProfileButton } from '@/components/layout/UserProfileButton';
 
 export default function BookingFlowSelection() {
   const navigate = useNavigate();
@@ -22,19 +23,22 @@ export default function BookingFlowSelection() {
       {/* Header */}
       <header className="py-6 px-4 border-b bg-background/80 backdrop-blur">
         <div className="container max-w-4xl mx-auto">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/')}
-              className="rounded-full"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">{selectedLocation?.name}</h1>
-              <p className="text-sm text-muted-foreground">Choose your booking preference</p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/')}
+                className="rounded-full"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold">{selectedLocation?.name}</h1>
+                <p className="text-sm text-muted-foreground">Choose your booking preference</p>
+              </div>
             </div>
+            <UserProfileButton />
           </div>
         </div>
       </header>

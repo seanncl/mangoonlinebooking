@@ -4,6 +4,7 @@ import { MapPin, Phone, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useBooking } from '@/context/BookingContext';
+import { UserProfileButton } from '@/components/layout/UserProfileButton';
 import { bookingAPI } from '@/services/booking-api';
 import { Location } from '@/types/booking';
 import locationDowntownImg from '@/assets/location-downtown.jpg';
@@ -60,7 +61,10 @@ export default function LocationSelection() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       {/* Header */}
-      <header className="py-8 px-4 text-center border-b bg-background/80 backdrop-blur">
+      <header className="py-8 px-4 text-center border-b bg-background/80 backdrop-blur relative">
+        <div className="absolute right-4 top-8">
+          <UserProfileButton />
+        </div>
         <div className="flex items-center justify-center gap-3 mb-2">
           <span className="text-4xl">💅</span>
           <h1 className="text-3xl font-bold text-accent">Mango Nail Spa</h1>
