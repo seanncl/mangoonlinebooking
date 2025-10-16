@@ -246,7 +246,7 @@ export default function ServiceSelection() {
                               {service.name}
                             </h4>
                             {hasAddOns && (
-                              <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+                              <Badge variant="secondary" className="text-[0.65rem] bg-gray-50 text-gray-400 border-gray-200 opacity-60">
                                 Add On
                               </Badge>
                             )}
