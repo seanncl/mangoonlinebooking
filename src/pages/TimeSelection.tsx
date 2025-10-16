@@ -101,6 +101,7 @@ export default function TimeSelection() {
   const [bestFitSlots, setBestFitSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [unavailableDates, setUnavailableDates] = useState<Date[]>([]);
 
   const totalDuration = cart.reduce((sum, item) => {
     const serviceDuration = item.service.duration_minutes;
@@ -130,6 +131,23 @@ export default function TimeSelection() {
     }
   };
 
+  // Generate all possible time slots (9 AM - 7 PM in 30-minute intervals)
+  const generateAllTimeSlots = () => {
+    const slots: string[] = [];
+    for (let hour = 9; hour <= 19; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        if (hour === 19 && minute > 0) break; // Stop at 7:00 PM
+        const isPM = hour >= 12;
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const time = `${displayHour}:${minute.toString().padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`;
+        slots.push(time);
+      }
+    }
+    return slots;
+  };
+
+  const allTimeSlots = generateAllTimeSlots();
+
   const loadAvailability = async (date: Date) => {
     if (!selectedLocation) return;
     
@@ -153,8 +171,20 @@ export default function TimeSelection() {
         throw new Error(response.error || 'Failed to check availability');
       }
       
-      setAvailableSlots(response.data.availableSlots || []);
+      const availableTimes = response.data.availableSlots || [];
+      setAvailableSlots(availableTimes);
       setBestFitSlots(response.data.bestFitSlots || []);
+      
+      // Mark date as unavailable if no slots
+      if (availableTimes.length === 0) {
+        setUnavailableDates(prev => {
+          const exists = prev.some(d => d.toDateString() === date.toDateString());
+          if (!exists) {
+            return [...prev, date];
+          }
+          return prev;
+        });
+      }
     } catch (error) {
       console.error('Error loading availability:', error);
       setSlotsError('Unable to load available times. Please try again.');
@@ -294,6 +324,7 @@ export default function TimeSelection() {
           <HorizontalDatePicker
             selectedDate={localDate}
             onDateSelect={handleDateSelect}
+            unavailableDates={unavailableDates}
           />
         </div>
 
@@ -307,9 +338,9 @@ export default function TimeSelection() {
               <div className="space-y-4">
                 <div>
                   <Skeleton className="h-4 w-20 mb-3" />
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <Skeleton key={i} className="h-11 w-full" />
                     ))}
                   </div>
                 </div>
@@ -324,66 +355,71 @@ export default function TimeSelection() {
                   </Button>
                 </AlertDescription>
               </Alert>
-            ) : availableSlots.length === 0 ? (
-              <Alert>
-                <AlertDescription>
-                  No available times for this date. Please try a different date or contact the salon.
-                </AlertDescription>
-              </Alert>
             ) : (
               <>
-                {/* Group slots by time of day */}
+                {/* Show ALL time slots with availability status */}
                 {(() => {
-                  const morningSlots = availableSlots.filter(slot => {
+                  // Categorize ALL slots (not just available ones)
+                  const morningSlots = allTimeSlots.filter(slot => {
                     const hour = parseInt(slot.split(':')[0]);
                     const isPM = slot.includes('PM');
                     return !isPM || hour === 12;
                   });
-                  const afternoonSlots = availableSlots.filter(slot => {
+                  const afternoonSlots = allTimeSlots.filter(slot => {
                     const hour = parseInt(slot.split(':')[0]);
                     const isPM = slot.includes('PM');
                     return isPM && hour !== 12 && hour < 4;
                   });
-                  const eveningSlots = availableSlots.filter(slot => {
+                  const eveningSlots = allTimeSlots.filter(slot => {
                     const hour = parseInt(slot.split(':')[0]);
                     const isPM = slot.includes('PM');
                     return isPM && hour >= 4;
                   });
 
+                  const renderTimeSlot = (time: string) => {
+                    const isAvailable = availableSlots.includes(time);
+                    const isBestFit = bestFitSlots.includes(time);
+                    const isSelected = selectedTime === time;
+                    
+                    return (
+                      <button
+                        key={time}
+                        onClick={() => isAvailable && handleTimeSelect(time)}
+                        disabled={!isAvailable}
+                        className={`relative px-3 py-2.5 rounded-xl border-2 text-xs font-medium transition-all ${
+                          isSelected
+                            ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                            : isAvailable
+                            ? 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border'
+                            : 'bg-muted/30 border-muted text-muted-foreground cursor-not-allowed opacity-50'
+                        }`}
+                      >
+                        {time}
+                        {isBestFit && isAvailable && (
+                          <Badge 
+                            variant={isSelected ? "secondary" : "default"}
+                            className="absolute -top-2 -right-2 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground"
+                          >
+                            ✨
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  };
+
                   return (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                       {morningSlots.length > 0 && (
                         <div>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-xl">🟡</span>
-                            <h3 className="text-sm font-semibold">Morning</h3>
+                            <h3 className="text-sm font-semibold">Morning (9 AM - 12 PM)</h3>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {morningSlots.filter(t => availableSlots.includes(t)).length} available
+                            </span>
                           </div>
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                            {morningSlots.map((time) => {
-                              const isBestFit = bestFitSlots.includes(time);
-                              const isSelected = selectedTime === time;
-                              return (
-                                <button
-                                  key={time}
-                                  onClick={() => handleTimeSelect(time)}
-                                  className={`relative px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                                    isSelected
-                                      ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                                      : 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border'
-                                  }`}
-                                >
-                                  {time}
-                                  {isBestFit && (
-                                    <Badge 
-                                      variant={isSelected ? "secondary" : "default"}
-                                      className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0 h-5 bg-primary text-primary-foreground"
-                                    >
-                                      ✨ Best
-                                    </Badge>
-                                  )}
-                                </button>
-                              );
-                            })}
+                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                            {morningSlots.map(renderTimeSlot)}
                           </div>
                         </div>
                       )}
@@ -392,34 +428,13 @@ export default function TimeSelection() {
                         <div>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-xl">🔵</span>
-                            <h3 className="text-sm font-semibold">Afternoon</h3>
+                            <h3 className="text-sm font-semibold">Afternoon (12 PM - 4 PM)</h3>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {afternoonSlots.filter(t => availableSlots.includes(t)).length} available
+                            </span>
                           </div>
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                            {afternoonSlots.map((time) => {
-                              const isBestFit = bestFitSlots.includes(time);
-                              const isSelected = selectedTime === time;
-                              return (
-                                <button
-                                  key={time}
-                                  onClick={() => handleTimeSelect(time)}
-                                  className={`relative px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                                    isSelected
-                                      ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                                      : 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border'
-                                  }`}
-                                >
-                                  {time}
-                                  {isBestFit && (
-                                    <Badge 
-                                      variant={isSelected ? "secondary" : "default"}
-                                      className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0 h-5 bg-primary text-primary-foreground"
-                                    >
-                                      ✨ Best
-                                    </Badge>
-                                  )}
-                                </button>
-                              );
-                            })}
+                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                            {afternoonSlots.map(renderTimeSlot)}
                           </div>
                         </div>
                       )}
@@ -428,34 +443,13 @@ export default function TimeSelection() {
                         <div>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-xl">🟣</span>
-                            <h3 className="text-sm font-semibold">Evening</h3>
+                            <h3 className="text-sm font-semibold">Evening (4 PM - 7 PM)</h3>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {eveningSlots.filter(t => availableSlots.includes(t)).length} available
+                            </span>
                           </div>
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                            {eveningSlots.map((time) => {
-                              const isBestFit = bestFitSlots.includes(time);
-                              const isSelected = selectedTime === time;
-                              return (
-                                <button
-                                  key={time}
-                                  onClick={() => handleTimeSelect(time)}
-                                  className={`relative px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                                    isSelected
-                                      ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                                      : 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border'
-                                  }`}
-                                >
-                                  {time}
-                                  {isBestFit && (
-                                    <Badge 
-                                      variant={isSelected ? "secondary" : "default"}
-                                      className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0 h-5 bg-primary text-primary-foreground"
-                                    >
-                                      ✨ Best
-                                    </Badge>
-                                  )}
-                                </button>
-                              );
-                            })}
+                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                            {eveningSlots.map(renderTimeSlot)}
                           </div>
                         </div>
                       )}
@@ -463,8 +457,27 @@ export default function TimeSelection() {
                   );
                 })()}
 
-                {/* Footer Info Sections */}
+                {/* Legend and Footer Info */}
                 <div className="mt-8 space-y-3">
+                  <div className="flex flex-wrap gap-4 p-3 bg-muted/30 rounded-lg text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded border-2 border-primary bg-primary"></div>
+                      <span className="text-muted-foreground">Selected</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded border-2 border-border bg-background"></div>
+                      <span className="text-muted-foreground">Available</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded border-2 border-muted bg-muted/30 opacity-50"></div>
+                      <span className="text-muted-foreground">Unavailable</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className="text-[9px] px-1.5 py-0 h-4">✨</Badge>
+                      <span className="text-muted-foreground">Best Fit</span>
+                    </div>
+                  </div>
+                
                   <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                     <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div>

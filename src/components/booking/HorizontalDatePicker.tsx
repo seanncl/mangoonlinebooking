@@ -1,27 +1,32 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { format, addDays, startOfToday, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface HorizontalDatePickerProps {
   selectedDate?: Date;
   onDateSelect: (date: Date) => void;
   unavailableDates?: Date[];
+  onCheckAvailability?: (date: Date) => Promise<boolean>;
 }
 
 export function HorizontalDatePicker({
   selectedDate,
   onDateSelect,
   unavailableDates = [],
+  onCheckAvailability,
 }: HorizontalDatePickerProps) {
   const [startDate, setStartDate] = useState(startOfToday());
+  const [showFullCalendar, setShowFullCalendar] = useState(false);
 
-  // Generate 5 days starting from startDate
-  const visibleDates = Array.from({ length: 5 }, (_, i) => addDays(startDate, i));
+  // Generate 7 days starting from startDate (increased from 5 for more visibility)
+  const visibleDates = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
 
   const handlePrevious = () => {
-    const newStartDate = addDays(startDate, -5);
+    const newStartDate = addDays(startDate, -7);
     // Don't go before today
     if (newStartDate >= startOfToday()) {
       setStartDate(newStartDate);
@@ -29,7 +34,14 @@ export function HorizontalDatePicker({
   };
 
   const handleNext = () => {
-    setStartDate(addDays(startDate, 5));
+    setStartDate(addDays(startDate, 7));
+  };
+
+  const handleCalendarSelect = (date: Date | undefined) => {
+    if (date) {
+      onDateSelect(date);
+      setShowFullCalendar(false);
+    }
   };
 
   const isDateUnavailable = (date: Date) => {
@@ -47,29 +59,51 @@ export function HorizontalDatePicker({
         <h3 className="text-lg font-semibold">
           {format(startDate, 'MMMM yyyy')}
         </h3>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrevious}
-            disabled={!canGoPrevious}
-            className="h-8 w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNext}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex gap-2">
+          <Popover open={showFullCalendar} onOpenChange={setShowFullCalendar}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                Full Calendar
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleCalendarSelect}
+                disabled={(date) => {
+                  if (date < startOfToday()) return true;
+                  return isDateUnavailable(date);
+                }}
+                className="rounded-md border pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handlePrevious}
+              disabled={!canGoPrevious}
+              className="h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNext}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Date Cards */}
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-7 gap-2">
         {visibleDates.map((date) => {
           const isSelected = selectedDate && isSameDay(date, selectedDate);
           const isTodayDate = isToday(date);
