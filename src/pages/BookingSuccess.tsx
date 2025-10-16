@@ -1,15 +1,19 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Check, Calendar, MapPin, Clock, Mail, Phone, ChevronRight } from 'lucide-react';
+import { Check, Calendar, MapPin, Clock, Mail, Phone, ChevronRight, Share2, Copy, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useBooking } from '@/context/BookingContext';
 import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import { useToast } from '@/hooks/use-toast';
 
 export default function BookingSuccess() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const {
     selectedLocation,
     cart,
@@ -31,7 +35,150 @@ export default function BookingSuccess() {
       return;
     }
   }, [selectedLocation, cart, customer, navigate]);
+
   const totalDuration = cart.reduce((sum, item) => sum + item.service.duration_minutes, 0);
+
+  // Generate .ics calendar file
+  const generateCalendarFile = (
+    title: string,
+    description: string,
+    location: string,
+    startDate: Date,
+    endDate: Date
+  ) => {
+    const formatDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Mango Nail Spa//Booking//EN',
+      'BEGIN:VEVENT',
+      `DTSTART:${formatDate(startDate)}`,
+      `DTEND:${formatDate(endDate)}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:${description}`,
+      `LOCATION:${location}`,
+      'STATUS:CONFIRMED',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `mango-booking-${confirmationNumber}.ics`;
+    link.click();
+  };
+
+  // Add to Calendar handler
+  const handleAddToCalendar = () => {
+    if (!selectedDate || !selectedTime || !selectedLocation) return;
+
+    const [time, period] = selectedTime.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    const startDate = new Date(selectedDate);
+    startDate.setHours(hours, minutes, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setMinutes(endDate.getMinutes() + totalDuration);
+
+    const serviceNames = cart.map(item => item.service.name).join(', ');
+    const description = `Your appointment at Mango Nail Spa\\n\\nServices: ${serviceNames}\\n\\nConfirmation: ${confirmationNumber}`;
+
+    generateCalendarFile(
+      'Mango Nail Spa Appointment',
+      description,
+      `${selectedLocation.name}, ${selectedLocation.address}`,
+      startDate,
+      endDate
+    );
+
+    toast({
+      title: 'Calendar Event Created',
+      description: 'The .ics file has been downloaded',
+    });
+  };
+
+  // Share handlers
+  const bookingDetails = `
+Mango Nail Spa Booking Confirmation
+
+Confirmation #: ${confirmationNumber}
+Date: ${selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : ''}
+Time: ${selectedTime}
+Location: ${selectedLocation?.name}
+Services: ${cart.map(item => item.service.name).join(', ')}
+
+Total: $${cartTotal.toFixed(2)}
+`.trim();
+
+  const handleShareEmail = () => {
+    const subject = encodeURIComponent(`Booking Confirmation - ${confirmationNumber}`);
+    const body = encodeURIComponent(bookingDetails);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  };
+
+  const handleShareSMS = () => {
+    const body = encodeURIComponent(bookingDetails);
+    window.open(`sms:?body=${body}`);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(bookingDetails);
+    toast({
+      title: 'Copied to Clipboard',
+      description: 'Booking details have been copied',
+    });
+  };
+
+  // Generate PDF receipt
+  const generateReceiptPDF = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.text('Mango Nail Spa', 105, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text('Payment Receipt', 105, 30, { align: 'center' });
+    
+    // Booking Details
+    doc.setFontSize(10);
+    let yPos = 50;
+    doc.text(`Confirmation Number: ${confirmationNumber}`, 20, yPos);
+    yPos += 10;
+    doc.text(`Date: ${selectedDate ? format(selectedDate, 'MMMM d, yyyy') : ''}`, 20, yPos);
+    yPos += 10;
+    doc.text(`Time: ${selectedTime}`, 20, yPos);
+    yPos += 20;
+    
+    // Services
+    doc.text('Services:', 20, yPos);
+    yPos += 10;
+    cart.forEach(item => {
+      doc.text(`- ${item.service.name}`, 25, yPos);
+      yPos += 7;
+    });
+    
+    // Payment Summary
+    yPos += 10;
+    doc.text(`Subtotal: $${cartTotal.toFixed(2)}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Deposit Paid: $${depositAmount.toFixed(2)}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Balance Due: $${(cartTotal - depositAmount).toFixed(2)}`, 20, yPos);
+    
+    doc.save(`receipt-${confirmationNumber}.pdf`);
+    
+    toast({
+      title: 'Receipt Downloaded',
+      description: 'Your receipt PDF has been downloaded',
+    });
+  };
 
   const handleNewBooking = () => {
     resetBooking();
@@ -145,19 +292,63 @@ export default function BookingSuccess() {
                 <span>${(cartTotal - depositAmount).toFixed(2)}</span>
               </div>
             </div>
+            {depositAmount > 0 && (
+              <div className="pt-4 border-t mt-4">
+                <Button variant="outline" className="w-full" onClick={generateReceiptPDF}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Download Receipt
+                </Button>
+              </div>
+            )}
           </Card>
         )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <Button variant="outline" className="gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={handleAddToCalendar}
+          >
             <Calendar className="h-4 w-4" />
             Add to Calendar
           </Button>
-          <Button variant="outline" className="gap-2">
-            <Phone className="h-4 w-4" />
-            Share Details
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Share2 className="h-4 w-4" />
+                Share Details
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="start">
+              <div className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={handleShareEmail}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={handleShareSMS}
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  SMS
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={handleCopyLink}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Link
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Before Your Appointment */}

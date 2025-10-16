@@ -10,10 +10,76 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Clock, Users, Sparkles, AlertCircle } from 'lucide-react';
+import { Clock, Users, Sparkles, AlertCircle, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { bookingAPI } from '@/services/booking-api';
 import { Button } from '@/components/ui/button';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortableServiceItemProps {
+  serviceId: string;
+  index: number;
+  service: {
+    name: string;
+    duration: number;
+  };
+  staffId?: string;
+}
+
+function SortableServiceItem({ serviceId, index, service, staffId }: SortableServiceItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: serviceId });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 p-3 bg-muted rounded-lg cursor-move hover:bg-muted/80 transition-colors"
+      {...attributes}
+      {...listeners}
+    >
+      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-semibold flex-shrink-0">
+        {index + 1}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">{service.name}</p>
+        <p className="text-sm text-muted-foreground">
+          {service.duration} min
+          {staffId && ' • Staff assigned'}
+        </p>
+      </div>
+      <GripVertical className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+    </div>
+  );
+}
 
 export default function TimeSelection() {
   const navigate = useNavigate();
@@ -26,6 +92,8 @@ export default function TimeSelection() {
     cart,
     startAllSameTime,
     setStartAllSameTime,
+    serviceOrder,
+    setServiceOrder,
   } = useBooking();
 
   const [localDate, setLocalDate] = useState<Date | undefined>(selectedDate);
@@ -42,6 +110,25 @@ export default function TimeSelection() {
 
   const staffCount = new Set(cart.map(item => item.staffId).filter(Boolean)).size;
   const hasMultipleStaff = staffCount > 1;
+
+  // Drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = serviceOrder.indexOf(active.id as string);
+      const newIndex = serviceOrder.indexOf(over.id as string);
+      const newOrder = arrayMove(serviceOrder, oldIndex, newIndex);
+      setServiceOrder(newOrder);
+    }
+  };
 
   const loadAvailability = async (date: Date) => {
     if (!selectedLocation) return;
@@ -157,6 +244,58 @@ export default function TimeSelection() {
                   checked={startAllSameTime}
                   onCheckedChange={setStartAllSameTime}
                 />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Service Order (for sequential bookings when NOT starting same time) */}
+        {hasMultipleStaff && !startAllSameTime && cart.length > 1 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Service Order</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Drag to reorder how services will be performed
+              </p>
+            </CardHeader>
+            <CardContent>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={serviceOrder}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {serviceOrder.map((serviceId, index) => {
+                      const cartItem = cart.find(item => item.service.id === serviceId);
+                      if (!cartItem) return null;
+                      
+                      const totalDuration = cartItem.service.duration_minutes +
+                        cartItem.addOns.reduce((sum, addOn) => sum + addOn.duration_minutes, 0);
+
+                      return (
+                        <SortableServiceItem
+                          key={serviceId}
+                          serviceId={serviceId}
+                          index={index}
+                          service={{
+                            name: cartItem.service.name,
+                            duration: totalDuration,
+                          }}
+                          staffId={cartItem.staffId}
+                        />
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4 mt-4 border-t">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>Services will be performed in this order, one after another</span>
               </div>
             </CardContent>
           </Card>

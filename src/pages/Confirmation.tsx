@@ -222,9 +222,14 @@ export default function Confirmation() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <p className="font-medium">{selectedTime}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <p className="font-medium">{selectedTime}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/time')}>
+                Edit
+              </Button>
             </div>
 
             <Separator />
@@ -378,7 +383,12 @@ export default function Confirmation() {
         {/* Customer Info */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Contact Information</span>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/info')}>
+                Edit
+              </Button>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {customer?.first_name && customer?.last_name && (
