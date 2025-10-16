@@ -277,10 +277,24 @@ export default function StaffSelection() {
                         </div>
                       </div>
 
-                      {/* View Schedule Link */}
+                      {/* Desktop Schedule Display */}
+                      <div className="hidden lg:flex items-center gap-4 text-xs text-muted-foreground border-l pl-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium w-12">Today:</span>
+                            <span>9:00 AM - 7:00 PM</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium w-12">Sat:</span>
+                            <span>10:00 AM - 6:00 PM</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mobile: View Schedule Link */}
                       <button
                         onClick={(e) => handleViewSchedule(e, member)}
-                        className="flex items-center gap-1.5 text-sm text-cyan-500 hover:text-cyan-600 transition-colors flex-shrink-0"
+                        className="flex lg:hidden items-center gap-1.5 text-sm text-cyan-500 hover:text-cyan-600 transition-colors flex-shrink-0"
                       >
                         <Calendar className="h-3.5 w-3.5" />
                         <span>View Schedule</span>
