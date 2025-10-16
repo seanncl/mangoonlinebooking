@@ -79,23 +79,23 @@ export function HorizontalDatePicker({
               />
             </PopoverContent>
           </Popover>
-          <div className="flex gap-1">
+          <div className="flex gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               onClick={handlePrevious}
               disabled={!canGoPrevious}
-              className="h-8 w-8"
+              className="h-10 w-10 touch-manipulation"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5" />
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               onClick={handleNext}
-              className="h-8 w-8"
+              className="h-10 w-10 touch-manipulation"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
         </div>
