@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown, Info } from 'lucide-react';
+import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
 import { bookingAPI } from '@/services/booking-api';
 import { Service, ServiceCategory } from '@/types/booking';
 import { toast } from 'sonner';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 const categoryConfig: Record<ServiceCategory, { label: string; icon: React.ReactNode }> = {
   manicure: { label: 'Manicure', icon: <Scissors className="h-5 w-5" /> },
@@ -26,8 +25,7 @@ const categoryConfig: Record<ServiceCategory, { label: string; icon: React.React
 
 export default function ServiceSelection() {
   const navigate = useNavigate();
-  const { selectedLocation, addToCart, cart, bookingFlowType, preferredStaffId } = useBooking();
-  const isMobile = useIsMobile();
+  const { selectedLocation, addToCart, cart, bookingFlowType, preferredStaffId, removeFromCart } = useBooking();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,6 +33,7 @@ export default function ServiceSelection() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [addOnsDialogOpen, setAddOnsDialogOpen] = useState(false);
+  const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -125,6 +124,25 @@ export default function ServiceSelection() {
     }
   };
 
+  const toggleDescription = (serviceId: string) => {
+    const newExpanded = new Set(expandedServices);
+    if (newExpanded.has(serviceId)) {
+      newExpanded.delete(serviceId);
+    } else {
+      newExpanded.add(serviceId);
+    }
+    setExpandedServices(newExpanded);
+  };
+
+  const isServiceInCart = (serviceId: string) => {
+    return cart.some(item => item.service.id === serviceId);
+  };
+
+  const handleRemoveService = (serviceId: string) => {
+    removeFromCart(serviceId);
+    toast.success('Service removed from cart');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -173,59 +191,95 @@ export default function ServiceSelection() {
             />
           </div>
 
-          {/* Services Grid */}
+          {/* Services List */}
           {Object.entries(groupedServices).map(([category, categoryServices]) => (
-            <div key={category} className="mb-12">
-              <h2 className="text-2xl font-bold mb-6 capitalize">{category.replace('_', ' ')}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {categoryServices.map((service) => (
-                  <Card key={service.id} className="p-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">
-                            {service.name}
-                          </h3>
-                          {isMobile && service.description && (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <button className="text-muted-foreground hover:text-foreground flex-shrink-0">
-                                  <Info className="h-4 w-4" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80">
-                                <p className="text-sm">{service.description}</p>
-                              </PopoverContent>
-                            </Popover>
+            <div key={category} className="mb-8">
+              <h2 className="text-xl font-bold mb-4 capitalize flex items-center gap-2">
+                {categoryConfig[category as ServiceCategory]?.icon}
+                {categoryConfig[category as ServiceCategory]?.label || category.replace('_', ' ')}
+              </h2>
+              <div className="space-y-3">
+                {categoryServices.map((service) => {
+                  const isInCart = isServiceInCart(service.id);
+                  const isExpanded = expandedServices.has(service.id);
+                  const hasAddOns = addOnServices.some(addOn => 
+                    !addOn.parent_service_id || addOn.parent_service_id === service.id
+                  );
+                  
+                  return (
+                    <Card
+                      key={service.id}
+                      className={cn(
+                        "p-4 transition-all duration-200",
+                        isInCart 
+                          ? "border-cyan-500 bg-cyan-50/50 shadow-sm" 
+                          : "border-border hover:shadow-sm"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          {/* Service Name Row - Clickable for description toggle */}
+                          <div 
+                            className="flex items-center gap-2 cursor-pointer group"
+                            onClick={() => toggleDescription(service.id)}
+                          >
+                            <h4 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
+                              {service.name}
+                            </h4>
+                            {hasAddOns && (
+                              <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+                                Add On
+                              </Badge>
+                            )}
+                            {service.description && (
+                              <ChevronDown 
+                                className={cn(
+                                  "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                                  isExpanded && "rotate-180"
+                                )}
+                              />
+                            )}
+                          </div>
+
+                          {/* Inline Price Display */}
+                          <div className="text-sm text-muted-foreground">
+                            💵 ${service.price_cash} · 💳 ${service.price_card} ⏱️ {service.duration_minutes} min
+                          </div>
+
+                          {/* Collapsible Description */}
+                          {isExpanded && service.description && (
+                            <div className="text-sm text-gray-600 pt-2 animate-accordion-down">
+                              {service.description}
+                            </div>
                           )}
                         </div>
-                        {!isMobile && service.description && (
-                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                            {service.description}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                          <Badge variant="secondary" className="gap-1">
-                            💵 ${service.price_cash}
-                          </Badge>
-                          <Badge variant="secondary" className="gap-1">
-                            💳 ${service.price_card}
-                          </Badge>
-                          <Badge variant="outline" className="gap-1">
-                            ⏱️ {service.duration_minutes} min
-                          </Badge>
+
+                        {/* Action Button */}
+                        <div className="flex-shrink-0">
+                          {isInCart ? (
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => handleRemoveService(service.id)}
+                              className="h-9 w-9 bg-red-500 hover:bg-red-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              size="icon"
+                              onClick={() => handleAddService(service)}
+                              className="h-9 w-9 bg-green-500 hover:bg-green-600"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <Button
-                        onClick={() => handleAddService(service)}
-                        size="icon"
-                        className="flex-shrink-0 h-10 w-10 rounded-full bg-primary hover:bg-primary-hover"
-                      >
-                        <Plus className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -261,32 +315,19 @@ export default function ServiceSelection() {
                       isSelected ? prev.filter(id => id !== addOn.id) : [...prev, addOn.id]
                     );
                   }}
-                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                    isSelected ? 'border-primary bg-primary-light' : 'hover:border-primary/50'
-                  }`}
+                  className={cn(
+                    "p-4 border rounded-lg cursor-pointer transition-all",
+                    isSelected ? 'border-cyan-500 bg-cyan-50/50' : 'hover:border-cyan-500/50'
+                  )}
                 >
                   <div className="flex items-start gap-3">
                     <Checkbox checked={isSelected} className="mt-1" />
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold">
-                          {addOn.name}
-                        </h4>
-                        {isMobile && addOn.description && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button className="text-muted-foreground hover:text-foreground flex-shrink-0">
-                                <Info className="h-4 w-4" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80">
-                              <p className="text-sm">{addOn.description}</p>
-                            </PopoverContent>
-                          </Popover>
-                        )}
-                      </div>
-                      {!isMobile && addOn.description && (
-                        <p className="text-sm text-muted-foreground mb-1 line-clamp-2">
+                      <h4 className="font-semibold mb-1">
+                        {addOn.name}
+                      </h4>
+                      {addOn.description && (
+                        <p className="text-sm text-muted-foreground mb-1">
                           {addOn.description}
                         </p>
                       )}
@@ -365,7 +406,7 @@ export default function ServiceSelection() {
       </Dialog>
 
       <BookingFooter
-        nextLabel={`Next ${cart.length > 0 ? `(${cart.length})` : ''}`}
+        nextLabel="Next"
         onNext={handleNext}
         nextDisabled={cart.length === 0}
       />

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useBooking } from '@/context/BookingContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Sheet,
   SheetContent,
@@ -10,6 +11,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { useState } from 'react';
 
 interface BookingHeaderProps {
   title?: string;
@@ -21,6 +23,7 @@ interface BookingHeaderProps {
 export const BookingHeader = ({ title, showClose = true, showCart = true, onClose }: BookingHeaderProps) => {
   const navigate = useNavigate();
   const { selectedLocation, cart, cartTotal, depositAmount, removeFromCart } = useBooking();
+  const [cartOpen, setCartOpen] = useState(false);
 
   const handleClose = () => {
     if (onClose) {
@@ -65,7 +68,7 @@ export const BookingHeader = ({ title, showClose = true, showCart = true, onClos
 
         {/* Right: Cart Icon */}
         {showCart && (
-          <Sheet>
+          <Sheet open={cartOpen} onOpenChange={setCartOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="relative h-10 w-10">
                 <ShoppingBag className="h-5 w-5" />
@@ -80,77 +83,106 @@ export const BookingHeader = ({ title, showClose = true, showCart = true, onClos
                 <span className="sr-only">Shopping cart ({cart.length} items)</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-md">
+            <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
               <SheetHeader>
-                <SheetTitle>Your Services</SheetTitle>
+                <SheetTitle>Your Cart</SheetTitle>
+                {selectedLocation && (
+                  <p className="text-sm text-muted-foreground">
+                    {selectedLocation.name.replace('Mango Nail Spa - ', '')}
+                  </p>
+                )}
               </SheetHeader>
-              <div className="mt-6 space-y-4">
+              
+              <div className="flex-1 overflow-y-auto mt-6">
                 {cart.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     No services selected yet
                   </p>
                 ) : (
-                  <>
-                    {cart.map((item, index) => (
-                      <div key={index} className="flex justify-between items-start gap-3 pb-3 border-b">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm">{item.service.name}</h4>
-                          <p className="text-xs text-muted-foreground">
-                            {item.service.duration_minutes} min
-                          </p>
-                          {item.addOns.length > 0 && (
-                            <div className="mt-1 space-y-0.5">
-                              {item.addOns.map((addOn, i) => (
-                                <p key={i} className="text-xs text-muted-foreground">
-                                  + {addOn.name}
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-sm">
-                            ${item.service.price_card.toFixed(2)}
-                          </p>
-                          {item.addOns.length > 0 && (
-                            <p className="text-xs text-muted-foreground">
-                              +${item.addOns.reduce((sum, addOn) =>
-                                sum + addOn.price_card - addOn.discount_when_bundled, 0
-                              ).toFixed(2)}
-                            </p>
-                          )}
+                  <div className="space-y-6">
+                    {/* Your Services Section */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-base">Your Services</h3>
+                      {cart.map((item, index) => (
+                        <Card key={index} className="p-3 relative">
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={() => removeFromCart(item.service.id)}
-                            className="mt-1 h-6 text-xs text-destructive hover:text-destructive"
+                            className="absolute top-2 right-2 h-6 w-6 text-destructive hover:text-destructive"
                           >
-                            Remove
+                            <X className="h-4 w-4" />
                           </Button>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="pt-4 space-y-2 border-t">
-                      <div className="flex justify-between text-sm">
-                        <span>Subtotal:</span>
-                        <span className="font-semibold">${cartTotal.toFixed(2)}</span>
-                      </div>
-                      {selectedLocation?.has_deposit_policy && (
-                        <>
-                          <div className="flex justify-between text-sm text-muted-foreground">
-                            <span>Deposit ({selectedLocation.deposit_percentage}%):</span>
-                            <span>${depositAmount.toFixed(2)}</span>
+                          <div className="pr-8 space-y-2">
+                            <div className="font-medium">{item.service.name}</div>
+                            {item.addOns && item.addOns.length > 0 && (
+                              <div className="text-sm text-muted-foreground">
+                                + {item.addOns.map(ao => ao.name).join(', ')}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-muted-foreground">
+                                💵 ${item.service.price_cash} · 💳 ${item.service.price_card}
+                              </span>
+                              <span className="text-muted-foreground">
+                                ⏱️ {item.service.duration_minutes} min
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex justify-between text-sm text-muted-foreground">
-                            <span>Remaining (pay at salon):</span>
-                            <span>${(cartTotal - depositAmount).toFixed(2)}</span>
+                        </Card>
+                      ))}
+                    </div>
+
+                    {/* Price Breakdown */}
+                    <div className="space-y-3 pt-4 border-t">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal:</span>
+                        <span className="font-medium">${cartTotal.toFixed(2)}</span>
+                      </div>
+                      {depositAmount > 0 && (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Deposit (20%):</span>
+                            <span className="font-medium">${depositAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Remaining Balance:</span>
+                            <span className="text-muted-foreground">${(cartTotal - depositAmount).toFixed(2)} (pay at salon)</span>
                           </div>
                         </>
                       )}
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <span className="font-semibold text-lg">Total Due Now:</span>
+                        <span className="font-bold text-2xl text-cyan-500">
+                          ${depositAmount > 0 ? depositAmount.toFixed(2) : cartTotal.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
+
+              {/* Action Buttons */}
+              {cart.length > 0 && (
+                <div className="space-y-2 pt-4 border-t mt-4">
+                  <Button 
+                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
+                    onClick={() => {
+                      setCartOpen(false);
+                      navigate('/time');
+                    }}
+                  >
+                    Proceed to Checkout
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setCartOpen(false)}
+                  >
+                    Continue Browsing
+                  </Button>
+                </div>
+              )}
             </SheetContent>
           </Sheet>
         )}
