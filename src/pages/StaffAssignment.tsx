@@ -55,7 +55,13 @@ export default function StaffAssignment() {
     }
   };
 
+  const allServicesAssigned = cart.every(item => item.staffId);
+
   const handleContinue = () => {
+    if (!allServicesAssigned) {
+      toast.error('Please assign a technician to all services');
+      return;
+    }
     navigate('/time');
   };
 
@@ -123,22 +129,17 @@ export default function StaffAssignment() {
 
                     {/* Staff Selector */}
                     <Select
-                      value={item.staffId || 'any-available'}
+                      value={item.staffId || ''}
                       onValueChange={(value) => updateCartItemStaff(item.service.id, value === 'any-available' ? undefined : value)}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue>
-                          {assignedStaff ? (
+                        <SelectValue placeholder="Select Staff">
+                          {assignedStaff && (
                             <div className="flex items-center gap-2">
                               <span className="text-2xl">{assignedStaff.avatar_emoji}</span>
                               <span>
                                 {assignedStaff.first_name} {assignedStaff.last_name}
                               </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Sparkles className="h-5 w-5 text-primary" />
-                              <span>Any Available</span>
                             </div>
                           )}
                         </SelectValue>
@@ -196,23 +197,13 @@ export default function StaffAssignment() {
           </div>
 
           {/* Assignment Status Info */}
-          <div className="mt-6 p-4 bg-muted/50 border rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              {cart.every(item => item.staffId) ? (
-                <span className="text-success-foreground">
-                  ✓ All services have been assigned to specific technicians
-                </span>
-              ) : cart.some(item => item.staffId) ? (
-                <span>
-                  Some services set to "Any Available" - we'll assign the best available technician for those
-                </span>
-              ) : (
-                <span>
-                  All services set to "Any Available" - we'll assign the best available technicians
-                </span>
-              )}
-            </p>
-          </div>
+          {!allServicesAssigned && (
+            <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+              <p className="text-sm text-warning-foreground">
+                Please assign a technician to all services before continuing
+              </p>
+            </div>
+          )}
 
         </div>
       </main>
@@ -220,6 +211,7 @@ export default function StaffAssignment() {
       <BookingFooter
         onNext={handleContinue}
         nextLabel="Continue to Time Selection"
+        nextDisabled={!allServicesAssigned}
       />
     </div>
   );
