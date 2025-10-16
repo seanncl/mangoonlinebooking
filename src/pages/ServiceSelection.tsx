@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown } from 'lucide-react';
+import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Service, ServiceCategory } from '@/types/booking';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const categoryConfig: Record<ServiceCategory, { label: string; icon: React.ReactNode }> = {
   manicure: { label: 'Manicure', icon: <Scissors className="h-5 w-5" /> },
@@ -25,6 +27,7 @@ const categoryConfig: Record<ServiceCategory, { label: string; icon: React.React
 export default function ServiceSelection() {
   const navigate = useNavigate();
   const { selectedLocation, addToCart, cart, bookingFlowType, preferredStaffId } = useBooking();
+  const isMobile = useIsMobile();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,10 +184,24 @@ export default function ServiceSelection() {
                   <Card key={service.id} className="p-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold mb-1">
-                          {service.name}
-                        </h3>
-                        {service.description && (
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold">
+                            {service.name}
+                          </h3>
+                          {isMobile && service.description && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                                  <Info className="h-4 w-4" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80">
+                                <p className="text-sm">{service.description}</p>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
+                        {!isMobile && service.description && (
                           <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                             {service.description}
                           </p>
@@ -253,10 +270,24 @@ export default function ServiceSelection() {
                   <div className="flex items-start gap-3">
                     <Checkbox checked={isSelected} className="mt-1" />
                     <div className="flex-1">
-                      <h4 className="font-semibold">
-                        {addOn.name}
-                      </h4>
-                      {addOn.description && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold">
+                          {addOn.name}
+                        </h4>
+                        {isMobile && addOn.description && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                                <Info className="h-4 w-4" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                              <p className="text-sm">{addOn.description}</p>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
+                      {!isMobile && addOn.description && (
                         <p className="text-sm text-muted-foreground mb-1 line-clamp-2">
                           {addOn.description}
                         </p>
