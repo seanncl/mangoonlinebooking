@@ -2,16 +2,16 @@ import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBooking } from '@/context/BookingContext';
 import { Button } from '@/components/ui/button';
-import { CartSheet } from '@/components/cart/CartSheet';
+import { UserProfileButton } from './UserProfileButton';
 
 interface BookingHeaderProps {
   title?: string;
   showClose?: boolean;
-  showCart?: boolean;
+  showProfile?: boolean;
   onClose?: () => void;
 }
 
-export const BookingHeader = ({ title, showClose = true, showCart = true, onClose }: BookingHeaderProps) => {
+export const BookingHeader = ({ title, showClose = true, showProfile = true, onClose }: BookingHeaderProps) => {
   const navigate = useNavigate();
   const { selectedLocation } = useBooking();
 
@@ -53,9 +53,9 @@ export const BookingHeader = ({ title, showClose = true, showCart = true, onClos
           )}
         </div>
 
-        {/* Right: Cart Icon */}
-        {showCart && <CartSheet />}
-        {!showCart && <div className="w-8" />}
+        {/* Right: Profile Button */}
+        {showProfile && <UserProfileButton />}
+        {!showProfile && <div className="w-8" />}
       </div>
     </header>
   );

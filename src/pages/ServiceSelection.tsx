@@ -168,7 +168,7 @@ export default function ServiceSelection() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <BookingHeader showCart={false} />
+      <BookingHeader />
 
       <main className="flex-1 pb-24">
         {/* Sticky Category & Search Section */}

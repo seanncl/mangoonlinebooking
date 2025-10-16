@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +14,23 @@ import { useToast } from '@/hooks/use-toast';
 export default function ClientInfo() {
   const navigate = useNavigate();
   const { setCustomer, customer } = useBooking();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [firstName, setFirstName] = useState(customer?.first_name || '');
   const [lastName, setLastName] = useState(customer?.last_name || '');
   const [email, setEmail] = useState(customer?.email || '');
   const [phone, setPhone] = useState(customer?.phone || '');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Pre-fill form if user is logged in
+  useEffect(() => {
+    if (user && !customer?.first_name) {
+      setFirstName(user.firstName);
+      setLastName(user.lastName);
+      setEmail(user.email);
+      setPhone(user.phone);
+    }
+  }, [user, customer]);
 
   const handleSocialLogin = async (provider: 'google' | 'apple') => {
     toast({
