@@ -7,7 +7,10 @@ import { BookingProvider } from "@/context/BookingContext";
 import LocationSelection from "./pages/LocationSelection";
 import ServiceSelection from "./pages/ServiceSelection";
 import StaffSelection from "./pages/StaffSelection";
+import TimeSelection from "./pages/TimeSelection";
+import ClientInfo from "./pages/ClientInfo";
 import PhoneVerification from "./pages/PhoneVerification";
+import Confirmation from "./pages/Confirmation";
 import BookingSuccess from "./pages/BookingSuccess";
 import NotFound from "./pages/NotFound";
 
@@ -24,7 +27,10 @@ const App = () => (
             <Route path="/" element={<LocationSelection />} />
             <Route path="/services" element={<ServiceSelection />} />
             <Route path="/staff" element={<StaffSelection />} />
+            <Route path="/time" element={<TimeSelection />} />
+            <Route path="/info" element={<ClientInfo />} />
             <Route path="/verify" element={<PhoneVerification />} />
+            <Route path="/confirm" element={<Confirmation />} />
             <Route path="/success" element={<BookingSuccess />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
