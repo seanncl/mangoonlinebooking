@@ -64,12 +64,12 @@ export default function LocationSelection() {
       <header className="py-6 px-4 border-b bg-background/80 backdrop-blur">
         <div className="container max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <div className="w-[44px]" />
+            <UserProfileButton />
             <div className="flex items-center gap-3">
               <span className="text-3xl">💅</span>
               <h1 className="text-2xl md:text-3xl font-bold text-accent">Mango Nail Spa</h1>
             </div>
-            <UserProfileButton />
+            <div className="w-[44px]" />
           </div>
           <p className="text-center text-muted-foreground">Your beauty destination</p>
         </div>
