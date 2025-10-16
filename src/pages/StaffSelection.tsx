@@ -166,11 +166,10 @@ export default function StaffSelection() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 relative ml-auto"
+                  className="gap-2 relative ml-auto h-9 w-9 p-0"
                   onClick={() => setCartOpen(true)}
                 >
                   <ShoppingBag className="h-4 w-4" />
-                  Cart
                   {cartCount > 0 && (
                     <Badge 
                       variant="default" 
