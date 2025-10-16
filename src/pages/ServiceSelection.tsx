@@ -214,7 +214,7 @@ export default function ServiceSelection() {
           {/* Services List */}
           {Object.entries(groupedServices).map(([category, categoryServices]) => (
             <div key={category} className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 capitalize">
+              <h2 className="text-xl font-bold mb-4 capitalize">
                 {categoryConfig[category as ServiceCategory]?.label || category.replace('_', ' ')}
               </h2>
               <div className="space-y-3">
