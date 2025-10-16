@@ -25,10 +25,18 @@ const categoryConfig: Record<ServiceCategory, { label: string; icon: React.React
   add_ons: { label: 'Add-Ons', icon: <Plus className="h-4 w-4" /> },
 };
 
-export const CartSheet = () => {
+interface CartSheetProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const CartSheet = ({ open: controlledOpen, onOpenChange }: CartSheetProps = {}) => {
   const navigate = useNavigate();
   const { selectedLocation, cart, cartTotal, depositAmount, removeFromCart, addToCart } = useBooking();
-  const [cartOpen, setCartOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const cartOpen = controlledOpen ?? internalOpen;
+  const setCartOpen = onOpenChange ?? setInternalOpen;
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<ServiceCategory>>(new Set(['extensions', 'nail_art']));
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
