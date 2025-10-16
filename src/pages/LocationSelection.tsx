@@ -19,19 +19,19 @@ export default function LocationSelection() {
     loadLocations();
   }, []);
 
-  // 🧪 TEMPORARY TEST - Verify Mock API Works
+  // 🧪 TEMPORARY TEST - Verify Mock Booking API Works
   useEffect(() => {
-    console.log('🧪 Testing Mock API...');
-    bookingAPI.getLocations().then(response => {
-      if (response.success && response.data) {
-        console.log('✅ Mock API Test Success:', response.data.length, 'locations');
-        console.log('📍 First location:', response.data[0]?.name);
-      } else {
-        console.error('❌ Mock API Test Failed:', response.error);
-      }
-    }).catch(error => {
-      console.error('❌ Mock API Test Failed:', error);
-    });
+    console.log('🧪 Testing Mock Booking API...');
+    bookingAPI.getLocations()
+      .then(response => {
+        if (response.success && response.data) {
+          console.log('✅ Mock API Success:', response.data.length, 'locations loaded');
+          console.log('📍 First location:', response.data[0]?.name);
+        }
+      })
+      .catch(error => {
+        console.error('❌ Mock API Failed:', error);
+      });
   }, []);
 
   const loadLocations = async () => {
