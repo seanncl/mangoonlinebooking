@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
-import { supabase } from '@/integrations/supabase/client';
+import { bookingAPI } from '@/services/booking-api';
 import { Service, ServiceCategory } from '@/types/booking';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -48,15 +48,13 @@ export default function ServiceSelection() {
     if (!selectedLocation) return;
 
     try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('location_id', selectedLocation.id)
-        .eq('is_active', true)
-        .order('display_order');
+      const response = await bookingAPI.getServices(selectedLocation.id);
+      
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to load services');
+      }
 
-      if (error) throw error;
-      setServices(data || []);
+      setServices(response.data);
     } catch (error) {
       console.error('Error loading services:', error);
       toast.error('Failed to load services');

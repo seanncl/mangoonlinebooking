@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
-import { supabase } from '@/integrations/supabase/client';
+import { bookingAPI } from '@/services/booking-api';
 import { Staff } from '@/types/booking';
 import { toast } from 'sonner';
 
@@ -40,15 +40,13 @@ export default function StaffSelection() {
     if (!selectedLocation) return;
 
     try {
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('location_id', selectedLocation.id)
-        .eq('is_active', true)
-        .order('display_order');
+      const response = await bookingAPI.getStaff(selectedLocation.id);
+      
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to load staff');
+      }
 
-      if (error) throw error;
-      setStaff(data || []);
+      setStaff(response.data);
     } catch (error) {
       console.error('Error loading staff:', error);
       toast.error('Failed to load staff');

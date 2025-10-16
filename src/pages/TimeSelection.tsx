@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Users, Sparkles, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
+import { bookingAPI } from '@/services/booking-api';
 import { Button } from '@/components/ui/button';
 
 export default function TimeSelection() {
@@ -54,19 +54,20 @@ export default function TimeSelection() {
         .map(item => item.staffId)
         .filter(Boolean) as string[];
       
-      const { data, error } = await supabase.functions.invoke('check-availability', {
-        body: {
-          locationId: selectedLocation.id,
-          date: date.toISOString(),
-          staffIds,
-          totalDuration,
-          startAllSameTime,
-        },
+      const response = await bookingAPI.checkAvailability({
+        locationId: selectedLocation.id,
+        date: date.toISOString().split('T')[0],
+        staffIds,
+        totalDuration,
+        startAllSameTime,
       });
       
-      if (error) throw error;
-      setAvailableSlots(data.availableSlots || []);
-      setBestFitSlots(data.bestFitSlots || []);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to check availability');
+      }
+      
+      setAvailableSlots(response.data.availableSlots || []);
+      setBestFitSlots(response.data.bestFitSlots || []);
     } catch (error) {
       console.error('Error loading availability:', error);
       setSlotsError('Unable to load available times. Please try again.');

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
+import { bookingAPI } from '@/services/booking-api';
 import { toast } from 'sonner';
 
 export default function PhoneVerification() {
@@ -82,15 +83,28 @@ export default function PhoneVerification() {
   };
 
   const handleVerify = async (codeToVerify: string) => {
-    // Demo mode: accept "123456" as valid code
-    if (codeToVerify === '123456') {
-      toast.success('Phone number verified!');
-      setPhoneVerified(true);
-      navigate('/confirm');
-    } else {
-      toast.error('Invalid verification code. Try 123456 for demo.');
-      setCode(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
+    try {
+      const response = await bookingAPI.verifyCode(
+        customer?.phone || '',
+        codeToVerify
+      );
+      
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Verification failed');
+      }
+      
+      if (response.data.verified) {
+        setPhoneVerified(true);
+        toast.success('Phone number verified!');
+        navigate('/confirm');
+      } else {
+        toast.error(response.data.message || 'Invalid verification code. Try 123456 for demo.');
+        setCode(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      toast.error('Unable to verify code. Please try again.');
     }
   };
 

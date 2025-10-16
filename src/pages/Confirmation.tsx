@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Calendar, Clock, MapPin, Mail, Phone, Shield, Star, CreditCard, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { bookingAPI } from '@/services/booking-api';
 
 export default function Confirmation() {
   const navigate = useNavigate();
@@ -149,30 +149,30 @@ export default function Confirmation() {
     }
 
     try {
-      // Call edge function to create booking
-      const { data, error } = await supabase.functions.invoke('create-booking', {
-        body: {
-          customer,
-          cart,
-          selectedLocation,
-          selectedDate: selectedDate?.toISOString(),
-          selectedTime,
-          cartTotal,
-          depositAmount,
-        },
+      // Create booking via API
+      const response = await bookingAPI.createBooking({
+        customer: customer!,
+        cart,
+        selectedLocation: selectedLocation!,
+        selectedDate: selectedDate!,
+        selectedTime: selectedTime!,
+        cartTotal,
+        depositAmount,
       });
 
-      if (error) throw error;
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to create booking');
+      }
 
       toast({
         title: 'Booking Confirmed!',
-        description: `Your confirmation number is ${data.confirmation_number}`,
+        description: `Your confirmation number is ${response.data.confirmation_number}`,
       });
 
       navigate('/success', { 
         state: { 
-          confirmationNumber: data.confirmation_number,
-          bookingId: data.booking_id 
+          confirmationNumber: response.data.confirmation_number,
+          bookingId: response.data.booking_id 
         } 
       });
     } catch (error: any) {

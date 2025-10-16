@@ -4,7 +4,7 @@ import { MapPin, Phone, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useBooking } from '@/context/BookingContext';
-import { supabase } from '@/integrations/supabase/client';
+import { bookingAPI } from '@/services/booking-api';
 import { Location } from '@/types/booking';
 import locationDowntownImg from '@/assets/location-downtown.jpg';
 import locationBeverlyImg from '@/assets/location-beverly.jpg';
@@ -21,13 +21,13 @@ export default function LocationSelection() {
 
   const loadLocations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*')
-        .order('name');
+      const response = await bookingAPI.getLocations();
+      
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to load locations');
+      }
 
-      if (error) throw error;
-      setLocations(data || []);
+      setLocations(response.data);
     } catch (error) {
       console.error('Error loading locations:', error);
     } finally {
