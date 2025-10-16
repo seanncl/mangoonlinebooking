@@ -14,6 +14,8 @@ export default function ClientInfo() {
   const navigate = useNavigate();
   const { setCustomer, customer } = useBooking();
   const { toast } = useToast();
+  const [firstName, setFirstName] = useState(customer?.first_name || '');
+  const [lastName, setLastName] = useState(customer?.last_name || '');
   const [email, setEmail] = useState(customer?.email || '');
   const [phone, setPhone] = useState(customer?.phone || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -26,10 +28,10 @@ export default function ClientInfo() {
   };
 
   const handleManualEntry = async () => {
-    if (!email || !phone) {
+    if (!firstName || !lastName || !email || !phone) {
       toast({
         title: 'Missing Information',
-        description: 'Please enter both email and phone number.',
+        description: 'Please enter all required fields.',
         variant: 'destructive',
       });
       return;
@@ -64,6 +66,8 @@ export default function ClientInfo() {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     setCustomer({
+      first_name: firstName,
+      last_name: lastName,
       email,
       phone: cleanPhone,
       has_accepted_policy: false,
@@ -133,6 +137,29 @@ export default function ClientInfo() {
         {/* Manual Entry Form */}
         <Card>
           <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">

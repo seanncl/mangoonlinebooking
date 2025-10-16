@@ -19,7 +19,6 @@ export default function StaffSelection() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [multiStaffMode, setMultiStaffMode] = useState(false);
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -31,7 +30,6 @@ export default function StaffSelection() {
       navigate('/');
       return;
     }
-    setMultiStaffMode(cart.length > 1);
     loadStaff();
   }, [selectedLocation, cart, navigate, bookingFlowType]);
 
@@ -87,13 +85,9 @@ export default function StaffSelection() {
     // If staff-first flow, store preferred staff and go to services
     if (bookingFlowType === 'staff-first') {
       setPreferredStaff(staffId);
-      // Assign staff to all existing cart items
-      cart.forEach(item => {
-        updateCartItemStaff(item.service.id, staffId);
-      });
       navigate('/services');
-    } else if (!multiStaffMode) {
-      // Service-first flow: Single service - assign same staff to all services in cart
+    } else {
+      // Service-first flow: assign same staff to all services in cart
       cart.forEach(item => {
         updateCartItemStaff(item.service.id, staffId);
       });
@@ -108,14 +102,6 @@ export default function StaffSelection() {
     navigate('/time');
   };
 
-  const handleNext = () => {
-    if (!multiStaffMode) {
-      toast.error('Please select a technician or choose "No Preference"');
-      return;
-    }
-    // For multi-staff mode, show assignment page
-    navigate('/staff/assign');
-  };
 
   if (loading) {
     return (
@@ -137,26 +123,9 @@ export default function StaffSelection() {
           <div className="mb-6">
             <h1 className="text-2xl font-bold mb-2">Choose Your Technician</h1>
             <p className="text-muted-foreground">
-              {multiStaffMode
-                ? "You can assign different technicians for each service"
-                : "Choose who you'd like to perform your service"}
+              Choose who you'd like to perform your service
             </p>
           </div>
-
-          {/* Multi-Staff Banner */}
-          {multiStaffMode && (
-            <Alert className="mb-6 border-accent bg-accent-light">
-              <AlertDescription className="flex items-center gap-2">
-                <span className="text-2xl">👥</span>
-                <div>
-                  <strong>Choose Multiple Staff</strong>
-                  <p className="text-sm mt-1">
-                    Click "Next" to select a different technician for each service
-                  </p>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
 
           {/* Search */}
           <div className="relative mb-6">
@@ -177,10 +146,8 @@ export default function StaffSelection() {
               return (
                 <Card
                   key={member.id}
-                  onClick={() => !multiStaffMode && handleSelectStaff(member.id)}
-                  className={`p-4 transition-all ${
-                    !multiStaffMode ? 'cursor-pointer hover:shadow-md hover:border-primary/50' : ''
-                  }`}
+                  onClick={() => handleSelectStaff(member.id)}
+                  className="p-4 transition-all cursor-pointer hover:shadow-md hover:border-primary/50"
                 >
                   <div className="flex items-center gap-4">
                     {/* Avatar */}
@@ -231,11 +198,7 @@ export default function StaffSelection() {
         </div>
       </main>
 
-      <BookingFooter
-        nextLabel={multiStaffMode ? 'Next' : undefined}
-        onNext={multiStaffMode ? handleNext : undefined}
-        hideNext={!multiStaffMode}
-      />
+      <BookingFooter hideNext />
     </div>
   );
 }

@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MapPin, User, Mail, Phone, Shield, Star } from 'lucide-react';
+import { Calendar, Clock, MapPin, Mail, Phone, Shield, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Confirmation() {
   const navigate = useNavigate();
@@ -43,11 +43,43 @@ export default function Confirmation() {
 
     setIsProcessing(true);
 
-    // Simulate booking processing
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // Call edge function to create booking
+      const { data, error } = await supabase.functions.invoke('create-booking', {
+        body: {
+          customer,
+          cart,
+          selectedLocation,
+          selectedDate: selectedDate?.toISOString(),
+          selectedTime,
+          cartTotal,
+          depositAmount,
+        },
+      });
 
-    setIsProcessing(false);
-    navigate('/success');
+      if (error) throw error;
+
+      toast({
+        title: 'Booking Confirmed!',
+        description: `Your confirmation number is ${data.confirmation_number}`,
+      });
+
+      navigate('/success', { 
+        state: { 
+          confirmationNumber: data.confirmation_number,
+          bookingId: data.booking_id 
+        } 
+      });
+    } catch (error: any) {
+      console.error('Booking error:', error);
+      toast({
+        title: 'Booking Failed',
+        description: error.message || 'Unable to create booking. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const isBookingDisabled = !policyAccepted || isProcessing;
@@ -146,6 +178,11 @@ export default function Confirmation() {
             <CardTitle>Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {customer?.first_name && customer?.last_name && (
+              <div className="flex items-center gap-3">
+                <span className="font-medium">{customer.first_name} {customer.last_name}</span>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <Mail className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">{customer?.email}</span>
@@ -182,22 +219,28 @@ export default function Confirmation() {
           </CardContent>
         </Card>
 
-        {/* Payment Method (if deposit required) */}
-        {hasDepositPolicy && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-base">Payment Method</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full justify-start" size="lg">
-                <Badge variant="outline" className="mr-2">
-                  VISA
-                </Badge>
-                •••• 4242
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        {/* Payment Information */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Payment Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hasDepositPolicy ? (
+              <div className="space-y-2">
+                <p className="text-sm">
+                  A deposit of <span className="font-semibold">${depositAmount.toFixed(2)}</span> will be required to confirm your booking.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Please bring your card to check in. The remaining balance of ${balanceDue.toFixed(2)} will be collected at the salon.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Payment of ${cartTotal.toFixed(2)} will be collected at the salon.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Trust Signals */}
         <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground mb-6">
