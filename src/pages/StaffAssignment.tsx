@@ -195,6 +195,25 @@ export default function StaffAssignment() {
             })}
           </div>
 
+          {/* Assignment Status Info */}
+          <div className="mt-6 p-4 bg-muted/50 border rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              {cart.every(item => item.staffId) ? (
+                <span className="text-success-foreground">
+                  ✓ All services have been assigned to specific technicians
+                </span>
+              ) : cart.some(item => item.staffId) ? (
+                <span>
+                  Some services set to "Any Available" - we'll assign the best available technician for those
+                </span>
+              ) : (
+                <span>
+                  All services set to "Any Available" - we'll assign the best available technicians
+                </span>
+              )}
+            </p>
+          </div>
+
         </div>
       </main>
 
