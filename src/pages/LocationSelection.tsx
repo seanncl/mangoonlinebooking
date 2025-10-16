@@ -19,21 +19,6 @@ export default function LocationSelection() {
     loadLocations();
   }, []);
 
-  // 🧪 TEMPORARY TEST - Verify Mock Booking API Works
-  useEffect(() => {
-    console.log('🧪 Testing Mock Booking API...');
-    bookingAPI.getLocations()
-      .then(response => {
-        if (response.success && response.data) {
-          console.log('✅ Mock API Success:', response.data.length, 'locations loaded');
-          console.log('📍 First location:', response.data[0]?.name);
-        }
-      })
-      .catch(error => {
-        console.error('❌ Mock API Failed:', error);
-      });
-  }, []);
-
   const loadLocations = async () => {
     try {
       const response = await bookingAPI.getLocations();

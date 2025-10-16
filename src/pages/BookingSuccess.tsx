@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Check, Calendar, MapPin, Clock, Mail, Phone, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 
 export default function BookingSuccess() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     selectedLocation,
     cart,
@@ -20,14 +21,16 @@ export default function BookingSuccess() {
     resetBooking,
   } = useBooking();
 
+  // Get confirmation data from API response (passed via navigation state)
+  const confirmationNumber = location.state?.confirmationNumber || 
+    `MNG${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
   useEffect(() => {
     if (!selectedLocation || cart.length === 0 || !customer) {
       navigate('/');
       return;
     }
   }, [selectedLocation, cart, customer, navigate]);
-
-  const confirmationNumber = `MNG${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
   const totalDuration = cart.reduce((sum, item) => sum + item.service.duration_minutes, 0);
 
   const handleNewBooking = () => {
