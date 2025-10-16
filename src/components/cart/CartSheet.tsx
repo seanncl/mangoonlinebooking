@@ -100,20 +100,6 @@ export const CartSheet = ({ open: controlledOpen, onOpenChange }: CartSheetProps
 
   return (
     <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-10 w-10">
-          <ShoppingBag className="h-5 w-5" />
-          {cart.length > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -right-1 -top-1 h-6 w-6 rounded-full p-0 text-xs flex items-center justify-center bg-cyan-500 hover:bg-cyan-500"
-            >
-              {cart.length}
-            </Badge>
-          )}
-          <span className="sr-only">Shopping cart ({cart.length} items)</span>
-        </Button>
-      </SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
         <SheetHeader className="px-6 pt-6 pb-4">
           <SheetTitle className="text-xl">Your Cart</SheetTitle>
