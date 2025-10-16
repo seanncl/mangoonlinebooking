@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, AlertCircle } from 'lucide-react';
+import { Check, AlertCircle, Sparkles, ArrowLeft } from 'lucide-react';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
@@ -18,12 +18,12 @@ export default function StaffAssignment() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!selectedLocation || cart.length === 0) {
+    if (!selectedLocation) {
       navigate('/');
       return;
     }
     loadStaff();
-  }, [selectedLocation, cart, navigate]);
+  }, [selectedLocation, navigate]);
 
   const loadStaff = async () => {
     if (!selectedLocation) return;
@@ -55,13 +55,7 @@ export default function StaffAssignment() {
     }
   };
 
-  const allServicesAssigned = cart.every(item => item.staffId);
-
   const handleContinue = () => {
-    if (!allServicesAssigned) {
-      toast.error('Please assign a technician to all services');
-      return;
-    }
     navigate('/time');
   };
 
@@ -82,10 +76,19 @@ export default function StaffAssignment() {
 
       <main className="flex-1 pb-24">
         <div className="container max-w-4xl mx-auto px-4 py-6">
+          {/* Back to staff list */}
+          <button
+            onClick={() => navigate('/staff')}
+            className="flex items-center gap-2 text-sm text-primary hover:underline mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to staff list
+          </button>
+
           <div className="mb-6">
             <h1 className="text-2xl font-bold mb-2">Assign Technicians</h1>
             <p className="text-muted-foreground">
-              Choose a technician for each service
+              Select a technician for each service
             </p>
           </div>
 
@@ -120,22 +123,40 @@ export default function StaffAssignment() {
 
                     {/* Staff Selector */}
                     <Select
-                      value={item.staffId || ''}
-                      onValueChange={(value) => updateCartItemStaff(item.service.id, value)}
+                      value={item.staffId || 'any-available'}
+                      onValueChange={(value) => updateCartItemStaff(item.service.id, value === 'any-available' ? undefined : value)}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select technician">
-                          {assignedStaff && (
+                        <SelectValue>
+                          {assignedStaff ? (
                             <div className="flex items-center gap-2">
                               <span className="text-2xl">{assignedStaff.avatar_emoji}</span>
                               <span>
                                 {assignedStaff.first_name} {assignedStaff.last_name}
                               </span>
                             </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="h-5 w-5 text-primary" />
+                              <span>Any Available</span>
+                            </div>
                           )}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
+                        {/* Any Available Option */}
+                        <SelectItem value="any-available">
+                          <div className="flex items-center gap-3 py-1">
+                            <Sparkles className="h-5 w-5 text-primary" />
+                            <div className="flex-1">
+                              <div className="font-medium">Any Available</div>
+                              <div className="text-xs text-muted-foreground">
+                                We'll assign the best available technician
+                              </div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        
                         {staff.map((member) => {
                           const statusConfig = getStatusConfig(member.status);
                           return (
@@ -174,20 +195,12 @@ export default function StaffAssignment() {
             })}
           </div>
 
-          {!allServicesAssigned && (
-            <div className="mt-6 p-4 bg-warning-light border border-warning/20 rounded-lg">
-              <p className="text-sm text-warning-foreground">
-                Please assign a technician to all services before continuing
-              </p>
-            </div>
-          )}
         </div>
       </main>
 
       <BookingFooter
         onNext={handleContinue}
         nextLabel="Continue to Time Selection"
-        nextDisabled={!allServicesAssigned}
       />
     </div>
   );

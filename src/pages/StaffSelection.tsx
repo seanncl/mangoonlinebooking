@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Calendar, ShoppingBag } from 'lucide-react';
+import { Search, Calendar, ShoppingBag, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -214,7 +214,27 @@ export default function StaffSelection() {
               />
             </div>
 
-            {/* No Preference Option - Moved to Top */}
+            {/* Choose Multiple Staff Option - Only for multiple services */}
+            {cart.length > 1 && (
+              <Card
+                className="p-4 cursor-pointer hover:border-primary transition-colors bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 rounded-2xl"
+                onClick={() => navigate('/staff-assignment')}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Users className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-base">Choose Multiple Staff</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      Select a different technician for each service
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* No Preference Option */}
             <Card
               onClick={handleNoPreference}
               className="p-4 cursor-pointer hover:shadow-md transition-all rounded-2xl bg-card border"
