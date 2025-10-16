@@ -41,13 +41,15 @@ export const BookingHeader = ({ title, showClose = true, showCart = true, onClos
         {!showClose && <div className="w-10" />}
 
         {/* Center: Logo & Location */}
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">💅</span>
+        <div className="flex flex-col items-center gap-0.5">
           {title && (
             <h1 className="text-lg font-bold text-accent">{title}</h1>
           )}
           {!title && selectedLocation && (
-            <h1 className="text-lg font-bold text-accent">{selectedLocation.name}</h1>
+            <>
+              <h1 className="text-lg font-bold text-accent">Mango Nail Spa</h1>
+              <p className="text-xs text-muted-foreground">{selectedLocation.name}</p>
+            </>
           )}
           {!title && !selectedLocation && (
             <h1 className="text-lg font-bold text-accent">Mango Nail Spa</h1>
