@@ -184,12 +184,12 @@ export default function ServiceSelection() {
                     variant={isSelected ? 'default' : 'outline'}
                     onClick={() => setSelectedCategory(isSelected ? null : category)}
                     className={cn(
-                      "flex-shrink-0 gap-2 rounded-2xl px-6 h-14 min-w-[120px]",
+                      "flex-shrink-0 flex-col gap-1 rounded-2xl px-4 py-2 h-auto min-w-[80px]",
                       isSelected && "bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500"
                     )}
                   >
                     {config.icon}
-                    {config.label}
+                    <span className="text-xs">{config.label}</span>
                   </Button>
                 );
               })}
@@ -261,12 +261,12 @@ export default function ServiceSelection() {
                           </div>
 
                           {/* Inline Price Display */}
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>💵 ${service.price_cash.toFixed(2)}</span>
-                            <span>•</span>
-                            <span>💳 ${service.price_card.toFixed(2)}</span>
-                            <span>⏱️ {service.duration_minutes} min</span>
-                          </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-bold text-foreground">💵 ${service.price_cash.toFixed(2)}</span>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="font-bold text-foreground">💳 ${service.price_card.toFixed(2)}</span>
+                      <span className="text-xs text-muted-foreground ml-1">⏱️ {service.duration_minutes}min</span>
+                    </div>
 
                           {/* Collapsible Description */}
                           {isExpanded && service.description && (
