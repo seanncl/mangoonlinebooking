@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown, X } from 'lucide-react';
+import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown, X, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -26,8 +26,9 @@ const categoryConfig: Record<ServiceCategory, { label: string; icon: React.React
 
 export default function ServiceSelection() {
   const navigate = useNavigate();
-  const { selectedLocation, addToCart, cart, bookingFlowType, preferredStaffId, removeFromCart } = useBooking();
+  const { selectedLocation, addToCart, cart, bookingFlowType, preferredStaffId, removeFromCart, cartCount } = useBooking();
   const [services, setServices] = useState<Service[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
@@ -208,8 +209,23 @@ export default function ServiceSelection() {
                   className="pl-10 h-12 rounded-xl"
                 />
               </div>
-              <div className="flex-shrink-0 h-11 w-11 flex items-center justify-center bg-gray-50 border border-input rounded-xl">
-                <CartSheet />
+              <div className="flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 relative h-11 w-11 p-0"
+                  onClick={() => setCartOpen(true)}
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  {cartCount > 0 && (
+                    <Badge 
+                      variant="default" 
+                      className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full"
+                    >
+                      {cartCount}
+                    </Badge>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -459,6 +475,9 @@ export default function ServiceSelection() {
         onNext={handleNext}
         nextDisabled={cart.length === 0}
       />
+      
+      {/* Cart Sheet */}
+      <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </div>
   );
 }
