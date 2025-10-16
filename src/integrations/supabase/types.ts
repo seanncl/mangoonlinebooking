@@ -408,6 +408,7 @@ export type Database = {
       staff: {
         Row: {
           avatar_emoji: string | null
+          bio: string | null
           created_at: string | null
           display_order: number | null
           first_name: string
@@ -416,12 +417,14 @@ export type Database = {
           last_name: string
           location_id: string | null
           next_available_time: string | null
+          photo_url: string | null
           specialties: string[] | null
           status: Database["public"]["Enums"]["staff_status"] | null
           updated_at: string | null
         }
         Insert: {
           avatar_emoji?: string | null
+          bio?: string | null
           created_at?: string | null
           display_order?: number | null
           first_name: string
@@ -430,12 +433,14 @@ export type Database = {
           last_name: string
           location_id?: string | null
           next_available_time?: string | null
+          photo_url?: string | null
           specialties?: string[] | null
           status?: Database["public"]["Enums"]["staff_status"] | null
           updated_at?: string | null
         }
         Update: {
           avatar_emoji?: string | null
+          bio?: string | null
           created_at?: string | null
           display_order?: number | null
           first_name?: string
@@ -444,6 +449,7 @@ export type Database = {
           last_name?: string
           location_id?: string | null
           next_available_time?: string | null
+          photo_url?: string | null
           specialties?: string[] | null
           status?: Database["public"]["Enums"]["staff_status"] | null
           updated_at?: string | null
