@@ -223,7 +223,7 @@ export default function StaffSelection() {
             >
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0 text-4xl leading-none">
-                  🤷
+                  🎲
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-base">No Preference</h3>
