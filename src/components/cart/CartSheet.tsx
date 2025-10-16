@@ -149,16 +149,16 @@ export const CartSheet = () => {
                           + {item.addOns.map(ao => ao.name).join(', ')}
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-sm pt-1">
-                        <span className="text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs pt-1">
+                        <span className="font-bold text-foreground">
                           💵 ${item.service.price_cash}
                         </span>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="text-muted-foreground">
+                        <span className="text-muted-foreground">•</span>
+                        <span className="font-bold text-foreground">
                           💳 ${item.service.price_card}
                         </span>
-                        <span className="text-muted-foreground">
-                          ⏱️ {item.service.duration_minutes} min
+                        <span className="text-[0.7rem] text-muted-foreground ml-1">
+                          ⏱️ {item.service.duration_minutes}min
                         </span>
                       </div>
                     </div>
