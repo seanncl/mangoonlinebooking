@@ -14,24 +14,9 @@ import { format } from 'date-fns';
 import { bookingAPI } from '@/services/booking-api';
 import { Button } from '@/components/ui/button';
 import { HorizontalDatePicker } from '@/components/booking/HorizontalDatePicker';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
 interface SortableServiceItemProps {
   serviceId: string;
   index: number;
@@ -41,31 +26,28 @@ interface SortableServiceItemProps {
   };
   staffId?: string;
 }
-
-function SortableServiceItem({ serviceId, index, service, staffId }: SortableServiceItemProps) {
+function SortableServiceItem({
+  serviceId,
+  index,
+  service,
+  staffId
+}: SortableServiceItemProps) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-    isDragging,
-  } = useSortable({ id: serviceId });
-
+    isDragging
+  } = useSortable({
+    id: serviceId
+  });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.5 : 1
   };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 p-3 bg-muted rounded-lg cursor-move hover:bg-muted/80 transition-colors"
-      {...attributes}
-      {...listeners}
-    >
+  return <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-3 bg-muted rounded-lg cursor-move hover:bg-muted/80 transition-colors" {...attributes} {...listeners}>
       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-semibold flex-shrink-0">
         {index + 1}
       </div>
@@ -77,10 +59,8 @@ function SortableServiceItem({ serviceId, index, service, staffId }: SortableSer
         </p>
       </div>
       <GripVertical className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-    </div>
-  );
+    </div>;
 }
-
 export default function TimeSelection() {
   const navigate = useNavigate();
   const {
@@ -93,36 +73,31 @@ export default function TimeSelection() {
     startAllSameTime,
     setStartAllSameTime,
     serviceOrder,
-    setServiceOrder,
+    setServiceOrder
   } = useBooking();
-
   const [localDate, setLocalDate] = useState<Date | undefined>(selectedDate);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [bestFitSlots, setBestFitSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [unavailableDates, setUnavailableDates] = useState<Date[]>([]);
-
   const totalDuration = cart.reduce((sum, item) => {
     const serviceDuration = item.service.duration_minutes;
     const addOnsDuration = item.addOns.reduce((addOnSum, addOn) => addOnSum + addOn.duration_minutes, 0);
     return sum + serviceDuration + addOnsDuration;
   }, 0);
-
   const staffCount = new Set(cart.map(item => item.staffId).filter(Boolean)).size;
   const hasMultipleStaff = staffCount > 1;
 
   // Drag-and-drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
+  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, {
+    coordinateGetter: sortableKeyboardCoordinates
+  }));
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
+    const {
+      active,
+      over
+    } = event;
     if (over && active.id !== over.id) {
       const oldIndex = serviceOrder.indexOf(active.id as string);
       const newIndex = serviceOrder.indexOf(over.id as string);
@@ -145,36 +120,27 @@ export default function TimeSelection() {
     }
     return slots;
   };
-
   const allTimeSlots = generateAllTimeSlots();
-
   const loadAvailability = async (date: Date) => {
     if (!selectedLocation) return;
-    
     setLoadingSlots(true);
     setSlotsError(null);
-    
     try {
-      const staffIds = cart
-        .map(item => item.staffId)
-        .filter(Boolean) as string[];
-      
+      const staffIds = cart.map(item => item.staffId).filter(Boolean) as string[];
       const response = await bookingAPI.checkAvailability({
         locationId: selectedLocation.id,
         date: date.toISOString().split('T')[0],
         staffIds,
         totalDuration,
-        startAllSameTime,
+        startAllSameTime
       });
-      
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to check availability');
       }
-      
       const availableTimes = response.data.availableSlots || [];
       setAvailableSlots(availableTimes);
       setBestFitSlots(response.data.bestFitSlots || []);
-      
+
       // Mark date as unavailable if no slots
       if (availableTimes.length === 0) {
         setUnavailableDates(prev => {
@@ -194,12 +160,10 @@ export default function TimeSelection() {
       setLoadingSlots(false);
     }
   };
-
   const handleDateSelect = (date: Date | undefined) => {
     setLocalDate(date);
     setSelectedDate(date);
     setSelectedTime(undefined);
-    
     if (date) {
       loadAvailability(date);
     } else {
@@ -207,19 +171,14 @@ export default function TimeSelection() {
       setBestFitSlots([]);
     }
   };
-
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
   };
-
   const handleNext = () => {
     navigate('/info');
   };
-
   const isNextDisabled = !selectedDate || !selectedTime;
-
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
+  return <div className="min-h-screen flex flex-col bg-background">
       <BookingHeader title="Select Date & Time" />
 
       <main className="flex-1 container px-4 py-6 pb-24 max-w-4xl">
@@ -231,19 +190,16 @@ export default function TimeSelection() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">{totalDuration} minutes</span>
               </div>
-              {hasMultipleStaff && (
-                <div className="flex items-center gap-2">
+              {hasMultipleStaff && <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">{staffCount} staff members</span>
-                </div>
-              )}
+                </div>}
             </div>
           </CardContent>
         </Card>
 
         {/* Start Same Time Toggle (for multiple staff) */}
-        {hasMultipleStaff && (
-          <Card className="mb-6">
+        {hasMultipleStaff && <Card className="mb-6">
             <CardContent className="pt-5 pb-5">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -257,19 +213,13 @@ export default function TimeSelection() {
                     </p>
                   </div>
                 </div>
-                <Switch
-                  id="same-time"
-                  checked={startAllSameTime}
-                  onCheckedChange={setStartAllSameTime}
-                />
+                <Switch id="same-time" checked={startAllSameTime} onCheckedChange={setStartAllSameTime} />
               </div>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
         {/* Service Order (for sequential bookings when NOT starting same time) */}
-        {hasMultipleStaff && !startAllSameTime && cart.length > 1 && (
-          <Card className="mb-6">
+        {hasMultipleStaff && !startAllSameTime && cart.length > 1 && <Card className="mb-6">
             <CardHeader>
               <CardTitle className="text-lg">Service Order</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
@@ -277,36 +227,18 @@ export default function TimeSelection() {
               </p>
             </CardHeader>
             <CardContent>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={serviceOrder}
-                  strategy={verticalListSortingStrategy}
-                >
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={serviceOrder} strategy={verticalListSortingStrategy}>
                   <div className="space-y-2">
                     {serviceOrder.map((serviceId, index) => {
-                      const cartItem = cart.find(item => item.service.id === serviceId);
-                      if (!cartItem) return null;
-                      
-                      const totalDuration = cartItem.service.duration_minutes +
-                        cartItem.addOns.reduce((sum, addOn) => sum + addOn.duration_minutes, 0);
-
-                      return (
-                        <SortableServiceItem
-                          key={serviceId}
-                          serviceId={serviceId}
-                          index={index}
-                          service={{
-                            name: cartItem.service.name,
-                            duration: totalDuration,
-                          }}
-                          staffId={cartItem.staffId}
-                        />
-                      );
-                    })}
+                  const cartItem = cart.find(item => item.service.id === serviceId);
+                  if (!cartItem) return null;
+                  const totalDuration = cartItem.service.duration_minutes + cartItem.addOns.reduce((sum, addOn) => sum + addOn.duration_minutes, 0);
+                  return <SortableServiceItem key={serviceId} serviceId={serviceId} index={index} service={{
+                    name: cartItem.service.name,
+                    duration: totalDuration
+                  }} staffId={cartItem.staffId} />;
+                })}
                   </div>
                 </SortableContext>
               </DndContext>
@@ -316,37 +248,28 @@ export default function TimeSelection() {
                 <span>Services will be performed in this order, one after another</span>
               </div>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
         {/* Horizontal Date Picker */}
         <div className="mb-6">
-          <HorizontalDatePicker
-            selectedDate={localDate}
-            onDateSelect={handleDateSelect}
-            unavailableDates={unavailableDates}
-          />
+          <HorizontalDatePicker selectedDate={localDate} onDateSelect={handleDateSelect} unavailableDates={unavailableDates} />
         </div>
 
         {/* Time Slots */}
-        {localDate && (
-          <div className="space-y-6">
+        {localDate && <div className="space-y-6">
             <h2 className="text-xl font-semibold">
               {format(localDate, 'EEEE, MMMM d')}
             </h2>
-            {loadingSlots ? (
-              <div className="space-y-4">
+            {loadingSlots ? <div className="space-y-4">
                 <div>
                   <Skeleton className="h-4 w-20 mb-3" />
                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <Skeleton key={i} className="h-11 w-full" />
-                    ))}
+                    {Array.from({
+                length: 12
+              }).map((_, i) => <Skeleton key={i} className="h-11 w-full" />)}
                   </div>
                 </div>
-              </div>
-            ) : slotsError ? (
-              <Alert>
+              </div> : slotsError ? <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="flex items-center justify-between">
                   <span>{slotsError}</span>
@@ -354,63 +277,38 @@ export default function TimeSelection() {
                     Retry
                   </Button>
                 </AlertDescription>
-              </Alert>
-            ) : (
-              <>
+              </Alert> : <>
                 {/* Show ALL time slots with availability status */}
                 {(() => {
-                  // Categorize ALL slots (not just available ones)
-                  const morningSlots = allTimeSlots.filter(slot => {
-                    const hour = parseInt(slot.split(':')[0]);
-                    const isPM = slot.includes('PM');
-                    return !isPM || hour === 12;
-                  });
-                  const afternoonSlots = allTimeSlots.filter(slot => {
-                    const hour = parseInt(slot.split(':')[0]);
-                    const isPM = slot.includes('PM');
-                    return isPM && hour !== 12 && hour < 4;
-                  });
-                  const eveningSlots = allTimeSlots.filter(slot => {
-                    const hour = parseInt(slot.split(':')[0]);
-                    const isPM = slot.includes('PM');
-                    return isPM && hour >= 4;
-                  });
-
-                  const renderTimeSlot = (time: string) => {
-                    const isAvailable = availableSlots.includes(time);
-                    const isBestFit = bestFitSlots.includes(time);
-                    const isSelected = selectedTime === time;
-                    
-                    return (
-                      <button
-                        key={time}
-                        onClick={() => isAvailable && handleTimeSelect(time)}
-                        disabled={!isAvailable}
-                        className={`relative px-3 py-2.5 rounded-xl border-2 text-xs font-medium transition-all ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                            : isAvailable
-                            ? 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border'
-                            : 'bg-muted/30 border-muted text-muted-foreground cursor-not-allowed opacity-50'
-                        }`}
-                      >
+            // Categorize ALL slots (not just available ones)
+            const morningSlots = allTimeSlots.filter(slot => {
+              const hour = parseInt(slot.split(':')[0]);
+              const isPM = slot.includes('PM');
+              return !isPM || hour === 12;
+            });
+            const afternoonSlots = allTimeSlots.filter(slot => {
+              const hour = parseInt(slot.split(':')[0]);
+              const isPM = slot.includes('PM');
+              return isPM && hour !== 12 && hour < 4;
+            });
+            const eveningSlots = allTimeSlots.filter(slot => {
+              const hour = parseInt(slot.split(':')[0]);
+              const isPM = slot.includes('PM');
+              return isPM && hour >= 4;
+            });
+            const renderTimeSlot = (time: string) => {
+              const isAvailable = availableSlots.includes(time);
+              const isBestFit = bestFitSlots.includes(time);
+              const isSelected = selectedTime === time;
+              return <button key={time} onClick={() => isAvailable && handleTimeSelect(time)} disabled={!isAvailable} className={`relative px-3 py-2.5 rounded-xl border-2 text-xs font-medium transition-all ${isSelected ? 'bg-primary text-primary-foreground border-primary shadow-md' : isAvailable ? 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border' : 'bg-muted/30 border-muted text-muted-foreground cursor-not-allowed opacity-50'}`}>
                         {time}
-                        {isBestFit && isAvailable && (
-                          <Badge 
-                            variant={isSelected ? "secondary" : "default"}
-                            className="absolute -top-2 -right-2 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground"
-                          >
+                        {isBestFit && isAvailable && <Badge variant={isSelected ? "secondary" : "default"} className="absolute -top-2 -right-2 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground">
                             ✨
-                          </Badge>
-                        )}
-                      </button>
-                    );
-                  };
-
-                  return (
-                    <div className="space-y-5">
-                      {morningSlots.length > 0 && (
-                        <div>
+                          </Badge>}
+                      </button>;
+            };
+            return <div className="space-y-5">
+                      {morningSlots.length > 0 && <div>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-xl">🟡</span>
                             <h3 className="text-sm font-semibold">Morning (9 AM - 12 PM)</h3>
@@ -421,11 +319,9 @@ export default function TimeSelection() {
                           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
                             {morningSlots.map(renderTimeSlot)}
                           </div>
-                        </div>
-                      )}
+                        </div>}
 
-                      {afternoonSlots.length > 0 && (
-                        <div>
+                      {afternoonSlots.length > 0 && <div>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-xl">🔵</span>
                             <h3 className="text-sm font-semibold">Afternoon (12 PM - 4 PM)</h3>
@@ -436,11 +332,9 @@ export default function TimeSelection() {
                           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
                             {afternoonSlots.map(renderTimeSlot)}
                           </div>
-                        </div>
-                      )}
+                        </div>}
 
-                      {eveningSlots.length > 0 && (
-                        <div>
+                      {eveningSlots.length > 0 && <div>
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-xl">🟣</span>
                             <h3 className="text-sm font-semibold">Evening (4 PM - 7 PM)</h3>
@@ -451,32 +345,13 @@ export default function TimeSelection() {
                           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
                             {eveningSlots.map(renderTimeSlot)}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                        </div>}
+                    </div>;
+          })()}
 
                 {/* Legend and Footer Info */}
                 <div className="mt-8 space-y-3">
-                  <div className="flex flex-wrap gap-4 p-3 bg-muted/30 rounded-lg text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded border-2 border-primary bg-primary"></div>
-                      <span className="text-muted-foreground">Selected</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded border-2 border-border bg-background"></div>
-                      <span className="text-muted-foreground">Available</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded border-2 border-muted bg-muted/30 opacity-50"></div>
-                      <span className="text-muted-foreground">Unavailable</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className="text-[9px] px-1.5 py-0 h-4">✨</Badge>
-                      <span className="text-muted-foreground">Best Fit</span>
-                    </div>
-                  </div>
+                  
                 
                   <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
                     <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -502,13 +377,10 @@ export default function TimeSelection() {
                     </div>
                   </div>
                 </div>
-              </>
-            )}
-          </div>
-        )}
+              </>}
+          </div>}
       </main>
 
       <BookingFooter onNext={handleNext} nextLabel="Continue" nextDisabled={isNextDisabled} />
-    </div>
-  );
+    </div>;
 }
