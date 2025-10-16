@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar } from '@/components/ui/calendar';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
@@ -10,10 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Clock, Users, Sparkles, AlertCircle, GripVertical } from 'lucide-react';
+import { Clock, Users, Sparkles, AlertCircle, GripVertical, Info, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { bookingAPI } from '@/services/booking-api';
 import { Button } from '@/components/ui/button';
+import { HorizontalDatePicker } from '@/components/booking/HorizontalDatePicker';
 import {
   DndContext,
   closestCenter,
@@ -192,52 +192,40 @@ export default function TimeSelection() {
     <div className="min-h-screen flex flex-col bg-background">
       <BookingHeader title="Select Date & Time" />
 
-      <main className="flex-1 container px-4 py-6 pb-24">
-        {/* Booking Summary Card */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Booking Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>{totalDuration} minutes total</span>
+      <main className="flex-1 container px-4 py-6 pb-24 max-w-4xl">
+        {/* Compact Booking Summary */}
+        <Card className="mb-4">
+          <CardContent className="pt-6 pb-6">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">{totalDuration} minutes</span>
+              </div>
+              {hasMultipleStaff && (
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{staffCount} staff members</span>
+                </div>
+              )}
             </div>
-            {hasMultipleStaff && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span>{staffCount} staff members</span>
-              </div>
-            )}
-            {cart.length > 0 && (
-              <div className="space-y-1">
-                {cart.map((item) => (
-                  <div key={item.service.id} className="text-sm">
-                    {item.service.name}
-                    {item.addOns.length > 0 && (
-                      <span className="text-muted-foreground">
-                        {' '}+ {item.addOns.length} add-on{item.addOns.length > 1 ? 's' : ''}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 
         {/* Start Same Time Toggle (for multiple staff) */}
         {hasMultipleStaff && (
           <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="same-time" className="text-base">
-                    Start All Services Same Time
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Multiple staff work on your services simultaneously
-                  </p>
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Users className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="same-time" className="text-sm font-medium cursor-pointer">
+                      All services begin simultaneously
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Multiple staff work on your services at once
+                    </p>
+                  </div>
                 </div>
                 <Switch
                   id="same-time"
@@ -301,174 +289,209 @@ export default function TimeSelection() {
           </Card>
         )}
 
-        {/* Calendar */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <Calendar
-              mode="single"
-              selected={localDate}
-              onSelect={handleDateSelect}
-              disabled={(date) => date < new Date()}
-              className="rounded-md border"
-            />
-          </CardContent>
-        </Card>
+        {/* Horizontal Date Picker */}
+        <div className="mb-6">
+          <HorizontalDatePicker
+            selectedDate={localDate}
+            onDateSelect={handleDateSelect}
+          />
+        </div>
 
         {/* Time Slots */}
         {localDate && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                Available Times - {format(localDate, 'EEEE, MMMM d')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {loadingSlots ? (
-                <div className="space-y-4">
-                  <div>
-                    <Skeleton className="h-4 w-20 mb-3" />
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 w-full" />
-                      ))}
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">
+              {format(localDate, 'EEEE, MMMM d')}
+            </h2>
+            {loadingSlots ? (
+              <div className="space-y-4">
+                <div>
+                  <Skeleton className="h-4 w-20 mb-3" />
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : slotsError ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="flex items-center justify-between">
+                  <span>{slotsError}</span>
+                  <Button variant="outline" size="sm" onClick={() => localDate && loadAvailability(localDate)}>
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : availableSlots.length === 0 ? (
+              <Alert>
+                <AlertDescription>
+                  No available times for this date. Please try a different date or contact the salon.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                {/* Group slots by time of day */}
+                {(() => {
+                  const morningSlots = availableSlots.filter(slot => {
+                    const hour = parseInt(slot.split(':')[0]);
+                    const isPM = slot.includes('PM');
+                    return !isPM || hour === 12;
+                  });
+                  const afternoonSlots = availableSlots.filter(slot => {
+                    const hour = parseInt(slot.split(':')[0]);
+                    const isPM = slot.includes('PM');
+                    return isPM && hour !== 12 && hour < 4;
+                  });
+                  const eveningSlots = availableSlots.filter(slot => {
+                    const hour = parseInt(slot.split(':')[0]);
+                    const isPM = slot.includes('PM');
+                    return isPM && hour >= 4;
+                  });
+
+                  return (
+                    <div className="space-y-6">
+                      {morningSlots.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xl">🟡</span>
+                            <h3 className="text-sm font-semibold">Morning</h3>
+                          </div>
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                            {morningSlots.map((time) => {
+                              const isBestFit = bestFitSlots.includes(time);
+                              const isSelected = selectedTime === time;
+                              return (
+                                <button
+                                  key={time}
+                                  onClick={() => handleTimeSelect(time)}
+                                  className={`relative px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                                    isSelected
+                                      ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                                      : 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border'
+                                  }`}
+                                >
+                                  {time}
+                                  {isBestFit && (
+                                    <Badge 
+                                      variant={isSelected ? "secondary" : "default"}
+                                      className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0 h-5 bg-primary text-primary-foreground"
+                                    >
+                                      ✨ Best
+                                    </Badge>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {afternoonSlots.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xl">🔵</span>
+                            <h3 className="text-sm font-semibold">Afternoon</h3>
+                          </div>
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                            {afternoonSlots.map((time) => {
+                              const isBestFit = bestFitSlots.includes(time);
+                              const isSelected = selectedTime === time;
+                              return (
+                                <button
+                                  key={time}
+                                  onClick={() => handleTimeSelect(time)}
+                                  className={`relative px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                                    isSelected
+                                      ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                                      : 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border'
+                                  }`}
+                                >
+                                  {time}
+                                  {isBestFit && (
+                                    <Badge 
+                                      variant={isSelected ? "secondary" : "default"}
+                                      className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0 h-5 bg-primary text-primary-foreground"
+                                    >
+                                      ✨ Best
+                                    </Badge>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {eveningSlots.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xl">🟣</span>
+                            <h3 className="text-sm font-semibold">Evening</h3>
+                          </div>
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                            {eveningSlots.map((time) => {
+                              const isBestFit = bestFitSlots.includes(time);
+                              const isSelected = selectedTime === time;
+                              return (
+                                <button
+                                  key={time}
+                                  onClick={() => handleTimeSelect(time)}
+                                  className={`relative px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                                    isSelected
+                                      ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                                      : 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border'
+                                  }`}
+                                >
+                                  {time}
+                                  {isBestFit && (
+                                    <Badge 
+                                      variant={isSelected ? "secondary" : "default"}
+                                      className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0 h-5 bg-primary text-primary-foreground"
+                                    >
+                                      ✨ Best
+                                    </Badge>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Footer Info Sections */}
+                <div className="mt-8 space-y-3">
+                  <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
+                    <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium mb-1">About Best Fit Times</p>
+                      <p className="text-xs text-muted-foreground">
+                        Best Fit times help optimize salon scheduling and availability
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3 p-4 bg-muted/50 rounded-lg">
+                    <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium mb-1">Need Different Times?</p>
+                      <p className="text-xs text-muted-foreground">
+                        Don't see your preferred time? Call us at{' '}
+                        <a href="tel:5551234567" className="text-primary hover:underline font-medium">
+                          (555) 123-4567
+                        </a>
+                        {' '}for more options
+                      </p>
                     </div>
                   </div>
                 </div>
-              ) : slotsError ? (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between">
-                    <span>{slotsError}</span>
-                    <Button variant="outline" size="sm" onClick={() => localDate && loadAvailability(localDate)}>
-                      Retry
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              ) : availableSlots.length === 0 ? (
-                <Alert>
-                  <AlertDescription>
-                    No available times for this date. Please try a different date or contact the salon.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  {/* Group slots by time of day */}
-                  {(() => {
-                    const morningSlots = availableSlots.filter(slot => {
-                      const hour = parseInt(slot.split(':')[0]);
-                      const isPM = slot.includes('PM');
-                      return !isPM || hour === 12;
-                    });
-                    const afternoonSlots = availableSlots.filter(slot => {
-                      const hour = parseInt(slot.split(':')[0]);
-                      const isPM = slot.includes('PM');
-                      return isPM && hour !== 12 && hour < 4;
-                    });
-                    const eveningSlots = availableSlots.filter(slot => {
-                      const hour = parseInt(slot.split(':')[0]);
-                      const isPM = slot.includes('PM');
-                      return isPM && hour >= 4;
-                    });
-
-                    return (
-                      <>
-                        {morningSlots.length > 0 && (
-                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground mb-3">Morning</h3>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                              {morningSlots.map((time) => {
-                                const isBestFit = bestFitSlots.includes(time);
-                                const isSelected = selectedTime === time;
-                                return (
-                                  <button
-                                    key={time}
-                                    onClick={() => handleTimeSelect(time)}
-                                    className={`relative px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                                      isSelected
-                                        ? 'bg-primary text-primary-foreground border-primary'
-                                        : 'bg-background hover:bg-accent hover:text-accent-foreground'
-                                    }`}
-                                  >
-                                    {time}
-                                    {isBestFit && !isSelected && (
-                                      <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-primary" />
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {afternoonSlots.length > 0 && (
-                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground mb-3">Afternoon</h3>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                              {afternoonSlots.map((time) => {
-                                const isBestFit = bestFitSlots.includes(time);
-                                const isSelected = selectedTime === time;
-                                return (
-                                  <button
-                                    key={time}
-                                    onClick={() => handleTimeSelect(time)}
-                                    className={`relative px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                                      isSelected
-                                        ? 'bg-primary text-primary-foreground border-primary'
-                                        : 'bg-background hover:bg-accent hover:text-accent-foreground'
-                                    }`}
-                                  >
-                                    {time}
-                                    {isBestFit && !isSelected && (
-                                      <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-primary" />
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {eveningSlots.length > 0 && (
-                          <div>
-                            <h3 className="text-sm font-medium text-muted-foreground mb-3">Evening</h3>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                              {eveningSlots.map((time) => {
-                                const isBestFit = bestFitSlots.includes(time);
-                                const isSelected = selectedTime === time;
-                                return (
-                                  <button
-                                    key={time}
-                                    onClick={() => handleTimeSelect(time)}
-                                    className={`relative px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                                      isSelected
-                                        ? 'bg-primary text-primary-foreground border-primary'
-                                        : 'bg-background hover:bg-accent hover:text-accent-foreground'
-                                    }`}
-                                  >
-                                    {time}
-                                    {isBestFit && !isSelected && (
-                                      <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-primary" />
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-
-                  {bestFitSlots.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <span>Best fit times based on your services</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
+              </>
+            )}
+          </div>
         )}
       </main>
 
