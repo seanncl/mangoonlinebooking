@@ -47,15 +47,36 @@ serve(async (req) => {
     const confirmationNumber = `MNG-${dateStr}-${randomStr}`;
     console.log('🎫 Generated confirmation number:', confirmationNumber);
 
-    // Create or update customer - Use phone as primary lookup, email as secondary
+    // Create or update customer - Use OAuth ID as primary, phone as secondary, email as tertiary
     let customerId = customer.id;
     let isNewCustomer = false;
 
     if (!customerId) {
-      // First try to find by phone
+      // First try to find by OAuth ID (Google or Apple)
       let existingCustomer = null;
       
-      if (customer.phone) {
+      if (customer.google_id) {
+        const { data: googleCustomer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('google_id', customer.google_id)
+          .single();
+        existingCustomer = googleCustomer;
+        console.log('🔍 Looked up customer by Google ID:', customer.google_id, existingCustomer ? 'Found' : 'Not found');
+      }
+      
+      if (!existingCustomer && customer.apple_id) {
+        const { data: appleCustomer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('apple_id', customer.apple_id)
+          .single();
+        existingCustomer = appleCustomer;
+        console.log('🔍 Looked up customer by Apple ID:', customer.apple_id, existingCustomer ? 'Found' : 'Not found');
+      }
+
+      // If not found by OAuth ID and phone exists, try phone
+      if (!existingCustomer && customer.phone) {
         const { data: phoneCustomer } = await supabase
           .from('customers')
           .select('id')
@@ -78,7 +99,7 @@ serve(async (req) => {
 
       if (existingCustomer) {
         customerId = existingCustomer.id;
-        // Update existing customer
+        // Update existing customer with OAuth IDs if provided
         await supabase
           .from('customers')
           .update({
@@ -86,13 +107,15 @@ serve(async (req) => {
             phone: customer.phone,
             first_name: customer.firstName || customer.first_name,
             last_name: customer.lastName || customer.last_name,
+            google_id: customer.google_id || null,
+            apple_id: customer.apple_id || null,
             has_accepted_policy: customer.has_accepted_policy,
             policy_accepted_at: customer.has_accepted_policy ? new Date().toISOString() : null,
           })
           .eq('id', customerId);
         console.log('✅ Updated existing customer:', customerId);
       } else {
-        // Create new customer
+        // Create new customer with OAuth IDs
         const { data: newCustomer, error: customerError } = await supabase
           .from('customers')
           .insert({
@@ -100,6 +123,8 @@ serve(async (req) => {
             phone: customer.phone,
             first_name: customer.firstName || customer.first_name,
             last_name: customer.lastName || customer.last_name,
+            google_id: customer.google_id || null,
+            apple_id: customer.apple_id || null,
             has_accepted_policy: customer.has_accepted_policy,
             policy_accepted_at: customer.has_accepted_policy ? new Date().toISOString() : null,
             sms_reminders_enabled: customer.sms_reminders_enabled ?? true,

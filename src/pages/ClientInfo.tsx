@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
@@ -7,19 +7,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, Mail, User } from 'lucide-react';
+import { Lock, Mail, User, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
 
 export default function ClientInfo() {
   const navigate = useNavigate();
-  const { setCustomer, customer } = useBooking();
+  const { setCustomer, customer, setAuthMethod, authMethod } = useBooking();
   const { toast } = useToast();
   const [email, setEmail] = useState(customer?.email || '');
   const [firstName, setFirstName] = useState(customer?.firstName || '');
   const [lastName, setLastName] = useState(customer?.lastName || '');
   const [phone, setPhone] = useState(customer?.phone || '');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOAuthConnected, setIsOAuthConnected] = useState(false);
 
   const formatPhoneNumber = (value: string) => {
     // Strip all non-digits
@@ -34,11 +36,131 @@ export default function ClientInfo() {
     return `(${limited.slice(0, 3)}) ${limited.slice(3, 6)}-${limited.slice(6)}`;
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'apple') => {
-    toast({
-      title: 'Coming Soon',
-      description: `${provider === 'google' ? 'Google' : 'Apple'} login will be available soon.`,
+  // Check for existing OAuth session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await handleOAuthCallback(session);
+      }
+    };
+    checkSession();
+
+    // Listen for OAuth callback
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        await handleOAuthCallback(session);
+      }
     });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleOAuthCallback = async (session: any) => {
+    const user = session.user;
+    if (!user) return;
+
+    setIsLoading(true);
+
+    try {
+      const provider = user.app_metadata.provider as 'google' | 'apple';
+      const oauthEmail = user.email || '';
+      const oauthFirstName = user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.first_name || '';
+      const oauthLastName = user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || user.user_metadata?.last_name || '';
+      const oauthId = provider === 'google' ? user.id : provider === 'apple' ? user.id : null;
+
+      // Check if customer exists with OAuth ID
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('*')
+        .or(`google_id.eq.${oauthId},apple_id.eq.${oauthId}`)
+        .single();
+
+      if (existingCustomer) {
+        // Existing OAuth user - load their data and skip to verification
+        setEmail(existingCustomer.email);
+        setFirstName(existingCustomer.first_name || '');
+        setLastName(existingCustomer.last_name || '');
+        setPhone(existingCustomer.phone || '');
+        setAuthMethod(provider);
+        setIsOAuthConnected(true);
+
+        if (existingCustomer.phone) {
+          // Has phone, can proceed
+          setCustomer({
+            id: existingCustomer.id,
+            email: existingCustomer.email,
+            phone: existingCustomer.phone,
+            firstName: existingCustomer.first_name,
+            lastName: existingCustomer.last_name,
+            google_id: existingCustomer.google_id,
+            apple_id: existingCustomer.apple_id,
+            auth_method: provider,
+            has_accepted_policy: existingCustomer.has_accepted_policy,
+            sms_reminders_enabled: existingCustomer.sms_reminders_enabled,
+            promotional_texts_enabled: existingCustomer.promotional_texts_enabled,
+          });
+
+          toast({
+            title: `Welcome back, ${existingCustomer.first_name}!`,
+            description: 'Your information has been loaded.',
+          });
+        } else {
+          // Need phone number
+          toast({
+            title: `Welcome, ${oauthFirstName}!`,
+            description: 'Please enter your phone number to continue.',
+          });
+        }
+      } else {
+        // New OAuth user - pre-fill form
+        setEmail(oauthEmail);
+        setFirstName(oauthFirstName);
+        setLastName(oauthLastName);
+        setAuthMethod(provider);
+        setIsOAuthConnected(true);
+
+        toast({
+          title: `Connected with ${provider === 'google' ? 'Google' : 'Apple'}`,
+          description: 'Please enter your phone number to continue.',
+        });
+      }
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      toast({
+        title: 'Sign-in Error',
+        description: 'Failed to process sign-in. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: provider === 'apple' ? 'apple' : 'google',
+        options: {
+          redirectTo: `${window.location.origin}/info`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('OAuth error:', error);
+      toast({
+        title: 'Sign-in Failed',
+        description: error instanceof Error ? error.message : 'Failed to sign in. Please try again or use manual entry.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleManualEntry = async () => {
@@ -79,6 +201,14 @@ export default function ClientInfo() {
 
     setIsLoading(true);
 
+    // Get OAuth session if exists
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    const provider = user?.app_metadata?.provider as 'google' | 'apple' | undefined;
+    
+    const googleId = provider === 'google' ? user?.id : undefined;
+    const appleId = provider === 'apple' ? user?.id : undefined;
+
     // Send verification SMS
     try {
       const { data, error } = await supabase.functions.invoke('send-verification-sms', {
@@ -93,6 +223,9 @@ export default function ClientInfo() {
           firstName,
           lastName,
           phone: formattedPhone,
+          google_id: googleId,
+          apple_id: appleId,
+          auth_method: authMethod || 'manual',
           has_accepted_policy: false,
           sms_reminders_enabled: true,
           promotional_texts_enabled: false,
@@ -129,13 +262,27 @@ export default function ClientInfo() {
       <BookingHeader title="Your Information" />
 
       <main className="flex-1 container max-w-md px-4 py-6 pb-24">
+        {/* OAuth Connected Badge */}
+        {isOAuthConnected && authMethod && (
+          <div className="mb-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              <span className="font-medium">
+                Connected via {authMethod === 'google' ? 'Google' : 'Apple'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Social Login Options */}
-        <div className="space-y-4 mb-8">
-          <Button
-            variant="outline"
-            className="w-full h-12 text-base"
-            onClick={() => handleSocialLogin('google')}
-          >
+        {!isOAuthConnected && (
+          <div className="space-y-4 mb-8">
+            <Button
+              variant="outline"
+              className="w-full h-12 text-base"
+              onClick={() => handleSocialLogin('google')}
+              disabled={isLoading}
+            >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
@@ -154,30 +301,34 @@ export default function ClientInfo() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
-          </Button>
+              Continue with Google
+            </Button>
 
-          <Button
-            variant="outline"
-            className="w-full h-12 text-base"
-            onClick={() => handleSocialLogin('apple')}
-          >
+            <Button
+              variant="outline"
+              className="w-full h-12 text-base"
+              onClick={() => handleSocialLogin('apple')}
+              disabled={isLoading}
+            >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
             </svg>
-            Continue with Apple
-          </Button>
-        </div>
+              Continue with Apple
+            </Button>
+          </div>
+        )}
 
         {/* Divider */}
-        <div className="relative mb-8">
+        {!isOAuthConnected && (
+          <div className="relative mb-8">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t"></div>
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Manual Entry Form */}
         <Card>
@@ -193,6 +344,7 @@ export default function ClientInfo() {
                   className="pl-10"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isOAuthConnected}
                 />
               </div>
             </div>
@@ -209,6 +361,7 @@ export default function ClientInfo() {
                     className="pl-10"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
+                    disabled={isOAuthConnected}
                   />
                 </div>
               </div>
@@ -224,6 +377,7 @@ export default function ClientInfo() {
                     className="pl-10"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
+                    disabled={isOAuthConnected}
                   />
                 </div>
               </div>
@@ -239,7 +393,10 @@ export default function ClientInfo() {
                 onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
               />
               <p className="text-xs text-muted-foreground">
-                Enter your 10-digit US phone number
+                {isOAuthConnected 
+                  ? 'Phone number required for SMS verification' 
+                  : 'Enter your 10-digit US phone number'
+                }
               </p>
             </div>
 
