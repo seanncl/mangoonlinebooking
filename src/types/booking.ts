@@ -69,6 +69,8 @@ export interface Customer {
 
 export interface BookingState {
   selectedLocation?: Location;
+  bookingFlowType?: 'service-first' | 'staff-first';
+  preferredStaffId?: string;
   cart: CartService[];
   selectedDate?: Date;
   selectedTime?: string;

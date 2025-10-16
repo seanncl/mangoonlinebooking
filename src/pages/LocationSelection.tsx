@@ -37,7 +37,7 @@ export default function LocationSelection() {
 
   const handleSelectLocation = (location: Location) => {
     setSelectedLocation(location);
-    navigate('/services');
+    navigate('/booking-flow');
   };
 
   const getLocationImage = (locationName: string) => {

@@ -15,20 +15,25 @@ import { toast } from 'sonner';
 
 export default function StaffSelection() {
   const navigate = useNavigate();
-  const { selectedLocation, cart, updateCartItemStaff } = useBooking();
+  const { selectedLocation, cart, updateCartItemStaff, bookingFlowType, setPreferredStaff } = useBooking();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [multiStaffMode, setMultiStaffMode] = useState(false);
 
   useEffect(() => {
-    if (!selectedLocation || cart.length === 0) {
+    if (!selectedLocation) {
+      navigate('/');
+      return;
+    }
+    // For staff-first flow, cart can be empty (selecting staff first)
+    if (bookingFlowType !== 'staff-first' && cart.length === 0) {
       navigate('/');
       return;
     }
     setMultiStaffMode(cart.length > 1);
     loadStaff();
-  }, [selectedLocation, cart, navigate]);
+  }, [selectedLocation, cart, navigate, bookingFlowType]);
 
   const loadStaff = async () => {
     if (!selectedLocation) return;
@@ -79,8 +84,16 @@ export default function StaffSelection() {
   };
 
   const handleSelectStaff = (staffId: string) => {
-    if (!multiStaffMode) {
-      // Single service - assign same staff to all services in cart
+    // If staff-first flow, store preferred staff and go to services
+    if (bookingFlowType === 'staff-first') {
+      setPreferredStaff(staffId);
+      // Assign staff to all existing cart items
+      cart.forEach(item => {
+        updateCartItemStaff(item.service.id, staffId);
+      });
+      navigate('/services');
+    } else if (!multiStaffMode) {
+      // Service-first flow: Single service - assign same staff to all services in cart
       cart.forEach(item => {
         updateCartItemStaff(item.service.id, staffId);
       });

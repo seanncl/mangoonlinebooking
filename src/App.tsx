@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BookingProvider } from "@/context/BookingContext";
 import LocationSelection from "./pages/LocationSelection";
+import BookingFlowSelection from "./pages/BookingFlowSelection";
 import ServiceSelection from "./pages/ServiceSelection";
 import StaffSelection from "./pages/StaffSelection";
 import TimeSelection from "./pages/TimeSelection";
@@ -25,6 +26,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LocationSelection />} />
+            <Route path="/booking-flow" element={<BookingFlowSelection />} />
             <Route path="/services" element={<ServiceSelection />} />
             <Route path="/staff" element={<StaffSelection />} />
             <Route path="/time" element={<TimeSelection />} />

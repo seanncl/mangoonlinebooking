@@ -3,6 +3,8 @@ import { BookingState, Location, CartService, Customer } from '@/types/booking';
 
 interface BookingContextType extends BookingState {
   setSelectedLocation: (location: Location | undefined) => void;
+  setBookingFlowType: (type: 'service-first' | 'staff-first' | undefined) => void;
+  setPreferredStaff: (staffId: string | undefined) => void;
   addToCart: (item: CartService) => void;
   removeFromCart: (serviceId: string) => void;
   updateCartItemStaff: (serviceId: string, staffId: string | undefined) => void;
@@ -53,6 +55,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const setSelectedLocation = (location: Location | undefined) => {
     setState(prev => ({ ...prev, selectedLocation: location, cart: [] }));
+  };
+
+  const setBookingFlowType = (type: 'service-first' | 'staff-first' | undefined) => {
+    setState(prev => ({ ...prev, bookingFlowType: type }));
+  };
+
+  const setPreferredStaff = (staffId: string | undefined) => {
+    setState(prev => ({ ...prev, preferredStaffId: staffId }));
   };
 
   const addToCart = (item: CartService) => {
@@ -133,6 +143,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         ...state,
         setSelectedLocation,
+        setBookingFlowType,
+        setPreferredStaff,
         addToCart,
         removeFromCart,
         updateCartItemStaff,

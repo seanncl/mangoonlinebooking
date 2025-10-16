@@ -24,7 +24,7 @@ const categoryConfig: Record<ServiceCategory, { label: string; icon: React.React
 
 export default function ServiceSelection() {
   const navigate = useNavigate();
-  const { selectedLocation, addToCart, cart } = useBooking();
+  const { selectedLocation, addToCart, cart, bookingFlowType, preferredStaffId } = useBooking();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,7 +116,12 @@ export default function ServiceSelection() {
       toast.error('Please select at least one service');
       return;
     }
-    navigate('/staff');
+    // If staff-first flow, skip staff selection (already chosen)
+    if (bookingFlowType === 'staff-first') {
+      navigate('/time');
+    } else {
+      navigate('/staff');
+    }
   };
 
   if (loading) {
