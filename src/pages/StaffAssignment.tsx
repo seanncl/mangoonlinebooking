@@ -198,8 +198,8 @@ export default function StaffAssignment() {
 
           {/* Assignment Status Info */}
           {!allServicesAssigned && (
-            <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
-              <p className="text-sm text-warning-foreground">
+            <div className="mt-6 p-4 bg-warning/10 border border-warning rounded-lg">
+              <p className="text-sm text-foreground font-medium">
                 Please assign a technician to all services before continuing
               </p>
             </div>
