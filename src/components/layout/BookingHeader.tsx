@@ -25,37 +25,37 @@ export const BookingHeader = ({ title, showClose = true, showCart = true, onClos
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
+      <div className="container flex h-12 items-center justify-between px-3">
         {/* Left: Close Button */}
         {showClose && (
           <Button
             variant="ghost"
             size="icon"
             onClick={handleClose}
-            className="h-10 w-10"
+            className="h-8 w-8"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </Button>
         )}
-        {!showClose && <div className="w-10" />}
+        {!showClose && <div className="w-8" />}
 
         {/* Center: Logo & Location */}
-        <div className="flex flex-col items-center gap-0.5">
+        <div className="flex items-center">
           {title && (
-            <h1 className="text-lg font-bold text-accent">{title}</h1>
+            <h1 className="text-base font-semibold text-accent">{title}</h1>
           )}
           {!title && selectedLocation && (
-            <p className="text-xs text-muted-foreground">{selectedLocation.name}</p>
+            <p className="text-sm text-muted-foreground">{selectedLocation.name}</p>
           )}
           {!title && !selectedLocation && (
-            <h1 className="text-lg font-bold text-accent">Mango Nail Spa</h1>
+            <h1 className="text-base font-semibold text-accent">Mango Nail Spa</h1>
           )}
         </div>
 
         {/* Right: Cart Icon */}
         {showCart && <CartSheet />}
-        {!showCart && <div className="w-10" />}
+        {!showCart && <div className="w-8" />}
       </div>
     </header>
   );
