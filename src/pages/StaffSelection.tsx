@@ -160,13 +160,12 @@ export default function StaffSelection() {
           {/* Selected Services Section with Cart */}
           {cart.length > 0 && (
             <div className="bg-card border rounded-xl p-4 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-muted-foreground">Selected Services</span>
-                <div className="h-6 w-px bg-border" />
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 relative ml-auto h-9 w-9 p-0"
+                  className="gap-2 relative h-9 w-9 p-0"
                   onClick={() => setCartOpen(true)}
                 >
                   <ShoppingBag className="h-4 w-4" />
