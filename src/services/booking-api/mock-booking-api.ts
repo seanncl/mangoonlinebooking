@@ -14,7 +14,7 @@ import {
   VerificationCodeResponse,
   VerifyCodeResponse,
 } from './types';
-import { mockLocations, mockServices, mockStaff, mockTimeSlots } from './mock-data';
+import { mockLocations, mockServices, mockStaff, mockTimeSlots, mockUnavailableDates } from './mock-data';
 
 export class MockBookingAPI implements IBookingAPI {
   /**
@@ -106,6 +106,23 @@ export class MockBookingAPI implements IBookingAPI {
     await this.delay(400);
 
     try {
+      // Check if this date is in the unavailable dates list
+      const dateStr = params.date;
+      if (mockUnavailableDates.includes(dateStr)) {
+        // Return empty slots for unavailable dates
+        return {
+          success: true,
+          data: {
+            availableSlots: [],
+            bestFitSlots: [],
+            locationHours: {
+              open: '09:00',
+              close: '19:00'
+            },
+          },
+        };
+      }
+
       // Get default time slots
       const allSlots = mockTimeSlots.default || [];
 
@@ -115,21 +132,32 @@ export class MockBookingAPI implements IBookingAPI {
       // 3. Filter out time slots that don't have enough buffer time
       // 4. Consider the total duration and startAllSameTime parameter
 
-      // For mock: just return available slots with some randomly removed
-      const availableSlots = allSlots.filter((_, index) => {
-        // Simulate some slots being booked (remove ~30% randomly)
-        return Math.random() > 0.3;
+      // For mock: Create consistent but varied availability based on date
+      const date = new Date(params.date);
+      const dayOfWeek = date.getDay();
+      
+      // Simulate realistic booking patterns:
+      // - Weekends (Sat/Sun) are busier - remove more slots
+      // - Mid-week has good availability
+      const removalRate = (dayOfWeek === 0 || dayOfWeek === 6) ? 0.4 : 0.25;
+      
+      // Use date as seed for consistent results per date
+      const dateSeed = date.getTime();
+      const availableSlots = allSlots.filter((slot, index) => {
+        // Create pseudo-random but consistent removal based on date + index
+        const slotSeed = (dateSeed + index * 1000) % 100;
+        return slotSeed > (removalRate * 100);
       });
 
       // Best fit slots (mid-morning, early afternoon, late afternoon)
       const bestFitSlots = availableSlots.filter((slot) => {
-        const hour = parseInt(slot.split(':')[0]);
-        return hour === 10 || hour === 13 || hour === 15;
+        return slot === '10:00 AM' || slot === '10:30 AM' || 
+               slot === '1:00 PM' || slot === '1:30 PM' || 
+               slot === '3:00 PM' || slot === '3:30 PM';
       });
 
       // Determine location hours based on day of week
-      const date = new Date(params.date);
-      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       const locationHours = isWeekend
         ? { open: '10:00', close: '18:00' }
         : { open: '09:00', close: '19:00' };
