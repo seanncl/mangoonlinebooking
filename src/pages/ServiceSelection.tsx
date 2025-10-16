@@ -261,11 +261,11 @@ export default function ServiceSelection() {
                           </div>
 
                           {/* Inline Price Display */}
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-xs">
                       <span className="font-bold text-foreground">💵 ${service.price_cash.toFixed(2)}</span>
                       <span className="text-muted-foreground">•</span>
                       <span className="font-bold text-foreground">💳 ${service.price_card.toFixed(2)}</span>
-                      <span className="text-xs text-muted-foreground ml-1">⏱️ {service.duration_minutes}min</span>
+                      <span className="text-[0.7rem] text-muted-foreground ml-1">⏱️ {service.duration_minutes}min</span>
                     </div>
 
                           {/* Collapsible Description */}
