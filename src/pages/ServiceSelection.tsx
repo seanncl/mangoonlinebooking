@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from '@/components/ui/checkbox';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
+import { CartSheet } from '@/components/cart/CartSheet';
 import { useBooking } from '@/context/BookingContext';
 import { bookingAPI } from '@/services/booking-api';
 import { Service, ServiceCategory } from '@/types/booking';
@@ -167,7 +168,7 @@ export default function ServiceSelection() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <BookingHeader />
+      <BookingHeader showCart={false} />
 
       <main className="flex-1 pb-24">
         {/* Sticky Category & Search Section */}
@@ -195,16 +196,21 @@ export default function ServiceSelection() {
               })}
             </div>
 
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search for services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 rounded-xl"
-              />
+            {/* Search Bar with Cart */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search for services..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                />
+              </div>
+              <div className="flex-shrink-0 h-11 w-11 flex items-center justify-center bg-gray-50 border border-input rounded-xl">
+                <CartSheet />
+              </div>
             </div>
           </div>
         </div>
