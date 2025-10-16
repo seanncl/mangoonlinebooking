@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, Mail } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,7 +15,6 @@ export default function ClientInfo() {
   const navigate = useNavigate();
   const { setCustomer, customer } = useBooking();
   const { toast } = useToast();
-  const [email, setEmail] = useState(customer?.email || '');
   const [phone, setPhone] = useState(customer?.phone || '');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -40,21 +39,10 @@ export default function ClientInfo() {
   };
 
   const handleManualEntry = async () => {
-    if (!email || !phone) {
+    if (!phone) {
       toast({
         title: 'Missing Information',
-        description: 'Please enter both email and phone number.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast({
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address.',
+        description: 'Please enter your phone number.',
         variant: 'destructive',
       });
       return;
@@ -87,7 +75,7 @@ export default function ClientInfo() {
 
       if (data?.success) {
         setCustomer({
-          email,
+          email: '',
           phone: formattedPhone,
           has_accepted_policy: false,
           sms_reminders_enabled: true,
@@ -178,21 +166,6 @@ export default function ClientInfo() {
         {/* Manual Entry Form */}
         <Card>
           <CardContent className="pt-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  className="pl-10"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
               <Input
