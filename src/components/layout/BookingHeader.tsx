@@ -23,8 +23,6 @@ export const BookingHeader = ({ title, showClose = true, showCart = true, onClos
     }
   };
 
-  const locationName = selectedLocation?.name?.replace('Mango Nail Spa - ', '') || 'Mango Nail Spa';
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
@@ -43,16 +41,16 @@ export const BookingHeader = ({ title, showClose = true, showCart = true, onClos
         {!showClose && <div className="w-10" />}
 
         {/* Center: Logo & Location */}
-        <div className="flex flex-col items-center gap-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">💅</span>
-            <h1 className="text-lg font-bold text-accent">Mango Nail Spa</h1>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">💅</span>
           {title && (
-            <p className="text-xs text-muted-foreground">{title}</p>
+            <h1 className="text-lg font-bold text-accent">{title}</h1>
           )}
           {!title && selectedLocation && (
-            <p className="text-xs text-muted-foreground">{locationName}</p>
+            <h1 className="text-lg font-bold text-accent">{selectedLocation.name}</h1>
+          )}
+          {!title && !selectedLocation && (
+            <h1 className="text-lg font-bold text-accent">Mango Nail Spa</h1>
           )}
         </div>
 
