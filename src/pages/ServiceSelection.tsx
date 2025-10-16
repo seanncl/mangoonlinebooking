@@ -34,6 +34,7 @@ export default function ServiceSelection() {
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [addOnsDialogOpen, setAddOnsDialogOpen] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
+  const [expandedAddOns, setExpandedAddOns] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -132,6 +133,16 @@ export default function ServiceSelection() {
       newExpanded.add(serviceId);
     }
     setExpandedServices(newExpanded);
+  };
+
+  const toggleAddOnDescription = (addOnId: string) => {
+    const newExpanded = new Set(expandedAddOns);
+    if (newExpanded.has(addOnId)) {
+      newExpanded.delete(addOnId);
+    } else {
+      newExpanded.add(addOnId);
+    }
+    setExpandedAddOns(newExpanded);
   };
 
   const isServiceInCart = (serviceId: string) => {
@@ -305,33 +316,52 @@ export default function ServiceSelection() {
           <div className="space-y-3 max-h-[400px] overflow-y-auto">
             {addOnServices.map((addOn) => {
               const isSelected = selectedAddOns.includes(addOn.id);
+              const isExpanded = expandedAddOns.has(addOn.id);
               const discountedPrice = addOn.price_card - addOn.discount_when_bundled;
 
               return (
                 <div
                   key={addOn.id}
-                  onClick={() => {
-                    setSelectedAddOns(prev =>
-                      isSelected ? prev.filter(id => id !== addOn.id) : [...prev, addOn.id]
-                    );
-                  }}
                   className={cn(
-                    "p-4 border rounded-lg cursor-pointer transition-all",
+                    "p-4 border rounded-lg transition-all",
                     isSelected ? 'border-cyan-500 bg-cyan-50/50' : 'hover:border-cyan-500/50'
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <Checkbox checked={isSelected} className="mt-1" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold mb-1">
-                        {addOn.name}
-                      </h4>
-                      {addOn.description && (
-                        <p className="text-sm text-muted-foreground mb-1">
+                    <Checkbox 
+                      checked={isSelected} 
+                      className="mt-1"
+                      onClick={() => {
+                        setSelectedAddOns(prev =>
+                          isSelected ? prev.filter(id => id !== addOn.id) : [...prev, addOn.id]
+                        );
+                      }}
+                    />
+                    <div className="flex-1 space-y-1">
+                      <div 
+                        className="flex items-center gap-2 cursor-pointer group"
+                        onClick={() => addOn.description && toggleAddOnDescription(addOn.id)}
+                      >
+                        <h4 className="font-semibold group-hover:text-primary transition-colors">
+                          {addOn.name}
+                        </h4>
+                        {addOn.description && (
+                          <ChevronDown 
+                            className={cn(
+                              "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                              isExpanded && "rotate-180"
+                            )}
+                          />
+                        )}
+                      </div>
+                      
+                      {isExpanded && addOn.description && (
+                        <p className="text-sm text-gray-600 pt-1 animate-accordion-down">
                           {addOn.description}
                         </p>
                       )}
-                      <div className="flex gap-3 text-sm mt-1">
+                      
+                      <div className="flex gap-3 text-sm">
                         <span className="text-muted-foreground">
                           💵 <span className="line-through">${addOn.price_cash}</span> ${(addOn.price_cash - addOn.discount_when_bundled).toFixed(2)}
                         </span>
