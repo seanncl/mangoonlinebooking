@@ -46,10 +46,7 @@ export const BookingHeader = ({ title, showClose = true, showCart = true, onClos
             <h1 className="text-lg font-bold text-accent">{title}</h1>
           )}
           {!title && selectedLocation && (
-            <>
-              <h1 className="text-lg font-bold text-accent">Mango Nail Spa</h1>
-              <p className="text-xs text-muted-foreground">{selectedLocation.name}</p>
-            </>
+            <p className="text-xs text-muted-foreground">{selectedLocation.name}</p>
           )}
           {!title && !selectedLocation && (
             <h1 className="text-lg font-bold text-accent">Mango Nail Spa</h1>
