@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ClientInfo() {
   const navigate = useNavigate();
@@ -58,21 +59,51 @@ export default function ClientInfo() {
       return;
     }
 
+    // Format phone with +1 country code
+    const formattedPhone = `+1${cleanPhone}`;
+
     setIsLoading(true);
 
-    // Simulate checking if customer exists
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Send verification SMS
+    try {
+      const { data, error } = await supabase.functions.invoke('send-verification-sms', {
+        body: { phone: formattedPhone }
+      });
 
-    setCustomer({
-      email,
-      phone: cleanPhone,
-      has_accepted_policy: false,
-      sms_reminders_enabled: true,
-      promotional_texts_enabled: false,
-    });
+      if (error) throw error;
 
-    setIsLoading(false);
-    navigate('/verify');
+      if (data?.success) {
+        setCustomer({
+          email,
+          phone: formattedPhone,
+          has_accepted_policy: false,
+          sms_reminders_enabled: true,
+          promotional_texts_enabled: false,
+        });
+
+        toast({
+          title: 'Code Sent',
+          description: `Verification code sent to ${formattedPhone}`,
+        });
+
+        navigate('/verify');
+      } else {
+        toast({
+          title: 'Failed to Send Code',
+          description: data?.message || 'Please try again',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error sending verification SMS:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to send verification code',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

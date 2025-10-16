@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin, User, Mail, Phone, Shield, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Confirmation() {
   const navigate = useNavigate();
@@ -20,9 +21,12 @@ export default function Confirmation() {
     cart,
     selectedDate,
     selectedTime,
+    startAllSameTime,
+    serviceOrder,
     customer,
     cartTotal,
     depositAmount,
+    resetBooking,
   } = useBooking();
 
   const [policyAccepted, setPolicyAccepted] = useState(false);
@@ -41,13 +45,78 @@ export default function Confirmation() {
       return;
     }
 
+    if (!selectedLocation || !cart.length || !selectedDate || !selectedTime || !customer) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please complete all booking steps',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
-    // Simulate booking processing
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // Create booking
+      const { data: bookingData, error: bookingError } = await supabase.functions.invoke('create-booking', {
+        body: {
+          customer: {
+            ...customer,
+            has_accepted_policy: policyAccepted,
+          },
+          location: selectedLocation,
+          services: cart,
+          selectedDate: selectedDate.toISOString().split('T')[0],
+          selectedTime,
+          startAllSameTime,
+          serviceOrder,
+        }
+      });
 
-    setIsProcessing(false);
-    navigate('/success');
+      if (bookingError) throw bookingError;
+
+      if (!bookingData?.success) {
+        throw new Error(bookingData?.message || 'Failed to create booking');
+      }
+
+      // Send confirmation email
+      try {
+        await supabase.functions.invoke('send-booking-confirmation', {
+          body: { bookingId: bookingData.bookingId }
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Don't fail the booking if email fails
+      }
+
+      toast({
+        title: 'Booking Confirmed!',
+        description: `Your confirmation number is ${bookingData.confirmationNumber}`,
+      });
+
+      // Navigate to success page with booking details
+      navigate('/success', {
+        state: {
+          confirmationNumber: bookingData.confirmationNumber,
+          bookingId: bookingData.bookingId
+        }
+      });
+
+      // Reset booking context after successful booking
+      setTimeout(() => {
+        resetBooking();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        title: 'Booking Failed',
+        description: error instanceof Error ? error.message : 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const isBookingDisabled = !policyAccepted || isProcessing;
