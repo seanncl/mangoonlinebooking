@@ -19,6 +19,19 @@ export default function ClientInfo() {
   const [phone, setPhone] = useState(customer?.phone || '');
   const [isLoading, setIsLoading] = useState(false);
 
+  const formatPhoneNumber = (value: string) => {
+    // Strip all non-digits
+    const cleaned = value.replace(/\D/g, '');
+    // Limit to 10 digits
+    const limited = cleaned.slice(0, 10);
+    
+    // Format as user types
+    if (limited.length === 0) return '';
+    if (limited.length <= 3) return `(${limited}`;
+    if (limited.length <= 6) return `(${limited.slice(0, 3)}) ${limited.slice(3)}`;
+    return `(${limited.slice(0, 3)}) ${limited.slice(3, 6)}-${limited.slice(6)}`;
+  };
+
   const handleSocialLogin = async (provider: 'google' | 'apple') => {
     toast({
       title: 'Coming Soon',
@@ -53,7 +66,7 @@ export default function ClientInfo() {
     if (!phoneRegex.test(cleanPhone)) {
       toast({
         title: 'Invalid Phone',
-        description: 'Please enter a 10-digit phone number.',
+        description: `Please enter exactly 10 digits (you entered ${cleanPhone.length} digits)`,
         variant: 'destructive',
       });
       return;
@@ -81,9 +94,10 @@ export default function ClientInfo() {
           promotional_texts_enabled: false,
         });
 
+        const displayPhone = `(${cleanPhone.slice(0, 3)}) ${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6)}`;
         toast({
           title: 'Code Sent',
-          description: `Verification code sent to ${formattedPhone}`,
+          description: `Verification code sent to ${displayPhone}`,
         });
 
         navigate('/verify');
@@ -186,8 +200,11 @@ export default function ClientInfo() {
                 type="tel"
                 placeholder="(555) 123-4567"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
               />
+              <p className="text-xs text-muted-foreground">
+                Enter your 10-digit US phone number
+              </p>
             </div>
 
             <Button

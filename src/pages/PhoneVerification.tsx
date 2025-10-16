@@ -165,7 +165,7 @@ export default function PhoneVerification() {
     }
   };
 
-  const maskedPhone = customer?.phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+  const maskedPhone = customer?.phone.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3');
 
   return (
     <div className="min-h-screen flex flex-col">
