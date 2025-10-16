@@ -13,7 +13,6 @@ interface BookingContextType extends BookingState {
   setServiceOrder: (order: string[]) => void;
   setCustomer: (customer: Customer | undefined) => void;
   setPhoneVerified: (verified: boolean) => void;
-  setAuthMethod: (method: 'manual' | 'google' | 'apple' | undefined) => void;
   resetBooking: () => void;
   cartTotal: number;
   cartCount: number;
@@ -109,10 +108,6 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setState(prev => ({ ...prev, phoneVerified: verified }));
   };
 
-  const setAuthMethod = (method: 'manual' | 'google' | 'apple' | undefined) => {
-    setState(prev => ({ ...prev, authMethod: method }));
-  };
-
   const resetBooking = () => {
     setState(initialState);
     localStorage.removeItem(STORAGE_KEY);
@@ -148,7 +143,6 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setServiceOrder,
         setCustomer,
         setPhoneVerified,
-        setAuthMethod,
         resetBooking,
         cartTotal,
         cartCount,

@@ -5,17 +5,14 @@ import { Input } from '@/components/ui/input';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function PhoneVerification() {
   const navigate = useNavigate();
   const { customer, setPhoneVerified } = useBooking();
-  const { toast } = useToast();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -85,87 +82,29 @@ export default function PhoneVerification() {
   };
 
   const handleVerify = async (codeToVerify: string) => {
-    if (!customer?.phone) {
-      toast({
-        title: 'Error',
-        description: 'Phone number not found',
-        variant: 'destructive',
-      });
-      navigate('/info');
-      return;
-    }
-
-    setIsVerifying(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-sms-code', {
-        body: {
-          phone: customer.phone,
-          code: codeToVerify
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.verified) {
-        setPhoneVerified(true);
-        toast({
-          title: 'Phone Verified',
-          description: 'Your phone number has been verified successfully',
-        });
-        navigate('/confirm');
-      } else {
-        toast({
-          title: 'Invalid Code',
-          description: data?.message || 'Please enter the correct verification code',
-          variant: 'destructive',
-        });
-        setCode(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
-      }
-    } catch (error) {
-      console.error('Error verifying code:', error);
-      toast({
-        title: 'Verification Failed',
-        description: error instanceof Error ? error.message : 'Please try again',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsVerifying(false);
+    // Demo mode: accept "123456" as valid code
+    if (codeToVerify === '123456') {
+      toast.success('Phone number verified!');
+      setPhoneVerified(true);
+      navigate('/confirm');
+    } else {
+      toast.error('Invalid verification code. Try 123456 for demo.');
+      setCode(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
     }
   };
 
-  const handleResend = async () => {
-    if (!canResend || !customer?.phone) return;
+  const handleResend = () => {
+    if (!canResend) return;
 
-    try {
-      const { data, error } = await supabase.functions.invoke('send-verification-sms', {
-        body: { phone: customer.phone }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        setCode(['', '', '', '', '', '']);
-        setCountdown(60);
-        setCanResend(false);
-        toast({
-          title: 'Code Sent',
-          description: 'A new verification code has been sent',
-        });
-        inputRefs.current[0]?.focus();
-      }
-    } catch (error) {
-      console.error('Error resending code:', error);
-      toast({
-        title: 'Failed to Resend',
-        description: 'Please try again',
-        variant: 'destructive',
-      });
-    }
+    toast.success('Verification code resent!');
+    setCode(['', '', '', '', '', '']);
+    setCountdown(60);
+    setCanResend(false);
+    inputRefs.current[0]?.focus();
   };
 
-  const maskedPhone = customer?.phone.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3');
+  const maskedPhone = customer?.phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -198,8 +137,7 @@ export default function PhoneVerification() {
                 onChange={(e) => handleInputChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
-                disabled={isVerifying}
-                className="w-12 h-14 text-center text-2xl font-semibold disabled:opacity-50"
+                className="w-12 h-14 text-center text-2xl font-semibold"
               />
             ))}
           </div>
@@ -207,12 +145,7 @@ export default function PhoneVerification() {
           {/* Resend Code */}
           <div className="text-center">
             {canResend ? (
-              <Button 
-                variant="link" 
-                onClick={handleResend} 
-                disabled={isVerifying}
-                className="text-primary"
-              >
+              <Button variant="link" onClick={handleResend} className="text-primary">
                 Resend code
               </Button>
             ) : (

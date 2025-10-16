@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown, Info, AlertCircle } from 'lucide-react';
+import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BookingHeader } from '@/components/layout/BookingHeader';
@@ -28,7 +27,6 @@ export default function ServiceSelection() {
   const { selectedLocation, addToCart, cart } = useBooking();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -127,25 +125,6 @@ export default function ServiceSelection() {
         <div className="text-center">
           <div className="text-4xl mb-4">💅</div>
           <p className="text-muted-foreground">Loading services...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <BookingHeader />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <Alert variant="destructive" className="max-w-md">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{error}</span>
-              <Button variant="outline" size="sm" onClick={loadServices}>
-                Retry
-              </Button>
-            </AlertDescription>
-          </Alert>
         </div>
       </div>
     );

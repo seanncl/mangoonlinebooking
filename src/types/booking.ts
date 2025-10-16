@@ -41,8 +41,6 @@ export interface Staff {
   first_name: string;
   last_name: string;
   avatar_emoji: string;
-  photo_url?: string;
-  bio?: string;
   status: StaffStatus;
   next_available_time?: string;
   specialties?: string[];
@@ -60,13 +58,10 @@ export interface Customer {
   id?: string;
   email: string;
   phone: string;
-  firstName?: string;
-  lastName?: string;
   first_name?: string;
   last_name?: string;
   google_id?: string;
   apple_id?: string;
-  auth_method?: 'manual' | 'google' | 'apple';
   has_accepted_policy: boolean;
   sms_reminders_enabled: boolean;
   promotional_texts_enabled: boolean;
@@ -81,5 +76,4 @@ export interface BookingState {
   serviceOrder: string[]; // service IDs in order
   customer?: Customer;
   phoneVerified: boolean;
-  authMethod?: 'manual' | 'google' | 'apple';
 }

@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin, User, Mail, Phone, Shield, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 export default function Confirmation() {
   const navigate = useNavigate();
@@ -21,12 +20,9 @@ export default function Confirmation() {
     cart,
     selectedDate,
     selectedTime,
-    startAllSameTime,
-    serviceOrder,
     customer,
     cartTotal,
     depositAmount,
-    resetBooking,
   } = useBooking();
 
   const [policyAccepted, setPolicyAccepted] = useState(false);
@@ -45,78 +41,13 @@ export default function Confirmation() {
       return;
     }
 
-    if (!selectedLocation || !cart.length || !selectedDate || !selectedTime || !customer) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please complete all booking steps',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsProcessing(true);
 
-    try {
-      // Create booking
-      const { data: bookingData, error: bookingError } = await supabase.functions.invoke('create-booking', {
-        body: {
-          customer: {
-            ...customer,
-            has_accepted_policy: policyAccepted,
-          },
-          location: selectedLocation,
-          services: cart,
-          selectedDate: selectedDate.toISOString().split('T')[0],
-          selectedTime,
-          startAllSameTime,
-          serviceOrder,
-        }
-      });
+    // Simulate booking processing
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      if (bookingError) throw bookingError;
-
-      if (!bookingData?.success) {
-        throw new Error(bookingData?.message || 'Failed to create booking');
-      }
-
-      // Send confirmation email
-      try {
-        await supabase.functions.invoke('send-booking-confirmation', {
-          body: { bookingId: bookingData.bookingId }
-        });
-      } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
-        // Don't fail the booking if email fails
-      }
-
-      toast({
-        title: 'Booking Confirmed!',
-        description: `Your confirmation number is ${bookingData.confirmationNumber}`,
-      });
-
-      // Navigate to success page with booking details
-      navigate('/success', {
-        state: {
-          confirmationNumber: bookingData.confirmationNumber,
-          bookingId: bookingData.bookingId
-        }
-      });
-
-      // Reset booking after navigation completes
-      setTimeout(() => {
-        resetBooking();
-      }, 100);
-
-    } catch (error) {
-      console.error('Error creating booking:', error);
-      toast({
-        title: 'Booking Failed',
-        description: error instanceof Error ? error.message : 'Please try again',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+    setIsProcessing(false);
+    navigate('/success');
   };
 
   const isBookingDisabled = !policyAccepted || isProcessing;
@@ -251,24 +182,19 @@ export default function Confirmation() {
           </CardContent>
         </Card>
 
-        {/* Payment Notice */}
+        {/* Payment Method (if deposit required) */}
         {hasDepositPolicy && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                Payment Information
-              </CardTitle>
+              <CardTitle className="text-base">Payment Method</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm font-medium mb-2">Deposit Required</p>
-                <p className="text-sm text-muted-foreground">
-                  A ${depositAmount.toFixed(2)} deposit ({selectedLocation?.deposit_percentage}% of total) will be collected at the salon.
-                </p>
-                <p className="text-xs text-muted-foreground mt-3 italic">
-                  Online payment processing coming soon
-                </p>
-              </div>
+            <CardContent>
+              <Button variant="outline" className="w-full justify-start" size="lg">
+                <Badge variant="outline" className="mr-2">
+                  VISA
+                </Badge>
+                •••• 4242
+              </Button>
             </CardContent>
           </Card>
         )}
