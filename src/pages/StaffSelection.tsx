@@ -161,10 +161,12 @@ export default function StaffSelection() {
           {cart.length > 0 && (
             <div className="bg-card border rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm font-medium text-muted-foreground">Selected Services</span>
+                <div className="h-6 w-px bg-border" />
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 relative"
+                  className="gap-2 relative ml-auto"
                   onClick={() => setCartOpen(true)}
                 >
                   <ShoppingBag className="h-4 w-4" />
@@ -178,8 +180,6 @@ export default function StaffSelection() {
                     </Badge>
                   )}
                 </Button>
-                <div className="h-6 w-px bg-border" />
-                <span className="text-sm font-medium text-muted-foreground">Selected Services</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {cart.map((item) => (
