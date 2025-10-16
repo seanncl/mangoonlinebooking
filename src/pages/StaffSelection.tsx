@@ -177,21 +177,52 @@ export default function StaffSelection() {
                   onClick={() => handleSelectStaff(member.id)}
                   className="p-4 transition-all cursor-pointer hover:shadow-md hover:border-primary/50"
                 >
-                  <div className="flex items-center gap-4">
-                    {/* Avatar */}
-                    <div className="text-5xl">{member.avatar_emoji}</div>
+                  <div className="flex items-start gap-4">
+                    {/* Avatar - Use photo if available, fallback to emoji */}
+                    {member.photo_url ? (
+                      <img
+                        src={member.photo_url}
+                        alt={`${member.first_name} ${member.last_name}`}
+                        className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const emojiDiv = e.currentTarget.nextElementSibling;
+                          if (emojiDiv) emojiDiv.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`text-5xl flex-shrink-0 ${member.photo_url ? 'hidden' : ''}`}>
+                      {member.avatar_emoji}
+                    </div>
 
                     {/* Info */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-lg">
                         {member.first_name} {member.last_name}
                       </h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      
+                      {member.bio && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {member.bio}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center gap-2 mt-2">
                         <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
                         <span className="text-sm text-muted-foreground">
                           {getAvailabilityText(member)}
                         </span>
                       </div>
+                      
+                      {member.specialties && member.specialties.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {member.specialties.slice(0, 3).map((specialty, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {specialty}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* View Schedule Link */}

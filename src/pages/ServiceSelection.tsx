@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown, Info } from 'lucide-react';
+import { Search, Scissors, Footprints, Sparkles, Palette, Plus, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -181,13 +181,15 @@ export default function ServiceSelection() {
                   <Card key={service.id} className="p-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold mb-1 flex items-center gap-2">
+                        <h3 className="font-semibold mb-1">
                           {service.name}
-                          {service.description && (
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          )}
                         </h3>
-                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground mb-3">
+                        {service.description && (
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                            {service.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                           <Badge variant="secondary" className="gap-1">
                             💵 ${service.price_cash}
                           </Badge>
@@ -251,12 +253,14 @@ export default function ServiceSelection() {
                   <div className="flex items-start gap-3">
                     <Checkbox checked={isSelected} className="mt-1" />
                     <div className="flex-1">
-                      <h4 className="font-semibold flex items-center gap-2">
+                      <h4 className="font-semibold">
                         {addOn.name}
-                        {addOn.description && (
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        )}
                       </h4>
+                      {addOn.description && (
+                        <p className="text-sm text-muted-foreground mb-1 line-clamp-2">
+                          {addOn.description}
+                        </p>
+                      )}
                       <div className="flex gap-3 text-sm mt-1">
                         <span className="text-muted-foreground">
                           💵 <span className="line-through">${addOn.price_cash}</span> ${(addOn.price_cash - addOn.discount_when_bundled).toFixed(2)}

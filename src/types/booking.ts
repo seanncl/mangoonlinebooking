@@ -41,6 +41,8 @@ export interface Staff {
   first_name: string;
   last_name: string;
   avatar_emoji: string;
+  photo_url?: string;
+  bio?: string;
   status: StaffStatus;
   next_available_time?: string;
   specialties?: string[];
