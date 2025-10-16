@@ -219,13 +219,18 @@ export default function StaffSelection() {
             {/* No Preference Option - Moved to Top */}
             <Card
               onClick={handleNoPreference}
-              className="p-4 border-2 border-dashed cursor-pointer hover:shadow-md hover:border-primary/50 transition-all bg-muted/30"
+              className="p-4 cursor-pointer hover:shadow-md transition-all rounded-2xl bg-card border"
             >
-              <div className="text-center py-2">
-                <h3 className="font-semibold text-lg mb-1">No Preference</h3>
-                <p className="text-sm text-muted-foreground">
-                  We'll match you with the first available technician
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 text-4xl leading-none">
+                  🤷
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-base">No Preference</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    First available technician
+                  </p>
+                </div>
               </div>
             </Card>
 
