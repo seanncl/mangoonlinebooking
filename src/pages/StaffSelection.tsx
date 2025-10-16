@@ -96,12 +96,8 @@ export default function StaffSelection() {
   };
 
   const handleNext = () => {
-    if (!multiStaffMode) {
-      toast.error('Please select a technician or choose "No Preference"');
-      return;
-    }
-    // For multi-staff mode, show assignment page
-    navigate('/staff/assign');
+    // Navigate to time selection regardless of mode
+    navigate('/time');
   };
 
   if (loading) {
@@ -186,11 +182,6 @@ export default function StaffSelection() {
                       </div>
                     </div>
 
-                    {/* View Schedule Link */}
-                    <Button variant="ghost" size="sm" className="gap-2 text-primary">
-                      <Calendar className="h-4 w-4" />
-                      View Schedule
-                    </Button>
                   </div>
                 </Card>
               );

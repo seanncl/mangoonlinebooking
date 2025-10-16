@@ -102,10 +102,10 @@ export default function Confirmation() {
         }
       });
 
-      // Reset booking context after successful booking
+      // Reset booking after navigation completes
       setTimeout(() => {
         resetBooking();
-      }, 1000);
+      }, 100);
 
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -251,19 +251,24 @@ export default function Confirmation() {
           </CardContent>
         </Card>
 
-        {/* Payment Method (if deposit required) */}
+        {/* Payment Notice */}
         {hasDepositPolicy && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-base">Payment Method</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base">
+                Payment Information
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full justify-start" size="lg">
-                <Badge variant="outline" className="mr-2">
-                  VISA
-                </Badge>
-                •••• 4242
-              </Button>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm font-medium mb-2">Deposit Required</p>
+                <p className="text-sm text-muted-foreground">
+                  A ${depositAmount.toFixed(2)} deposit ({selectedLocation?.deposit_percentage}% of total) will be collected at the salon.
+                </p>
+                <p className="text-xs text-muted-foreground mt-3 italic">
+                  Online payment processing coming soon
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}

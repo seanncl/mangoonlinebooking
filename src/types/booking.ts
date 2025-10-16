@@ -58,6 +58,8 @@ export interface Customer {
   id?: string;
   email: string;
   phone: string;
+  firstName?: string;
+  lastName?: string;
   first_name?: string;
   last_name?: string;
   google_id?: string;

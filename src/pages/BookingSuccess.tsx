@@ -1,14 +1,17 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Check, Calendar, MapPin, Clock, Mail, Phone, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useBooking } from '@/context/BookingContext';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 export default function BookingSuccess() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
   const {
     selectedLocation,
     cart,
@@ -20,19 +23,75 @@ export default function BookingSuccess() {
     resetBooking,
   } = useBooking();
 
+  // Get confirmation number from navigation state
+  const confirmationNumber = location.state?.confirmationNumber;
+
   useEffect(() => {
     if (!selectedLocation || cart.length === 0 || !customer) {
       navigate('/');
       return;
     }
-  }, [selectedLocation, cart, customer, navigate]);
 
-  const confirmationNumber = `MNG${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    if (!confirmationNumber) {
+      toast({
+        title: 'Booking Error',
+        description: 'No confirmation number found. Please try booking again.',
+        variant: 'destructive',
+      });
+      navigate('/');
+    }
+  }, [selectedLocation, cart, customer, confirmationNumber, navigate, toast]);
+
   const totalDuration = cart.reduce((sum, item) => sum + item.service.duration_minutes, 0);
 
   const handleNewBooking = () => {
     resetBooking();
     navigate('/');
+  };
+
+  const handleAddToCalendar = () => {
+    if (!selectedDate || !selectedTime || !selectedLocation) return;
+
+    const [hours, minutes] = selectedTime.split(':');
+    const startDate = new Date(selectedDate);
+    startDate.setHours(parseInt(hours), parseInt(minutes), 0);
+
+    const totalDuration = cart.reduce((total, item) => {
+      return total + item.service.duration_minutes + 
+        item.addOns.reduce((sum, addOn) => sum + addOn.duration_minutes, 0);
+    }, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setMinutes(endDate.getMinutes() + totalDuration);
+
+    const formatGoogleDate = (date: Date) => {
+      return date.toISOString().replace(/-|:|\.\d+/g, '');
+    };
+
+    const servicesList = cart.map(item => {
+      const addOnsText = item.addOns.length > 0 
+        ? ` + ${item.addOns.map(a => a.name).join(', ')}` 
+        : '';
+      return `${item.service.name}${addOnsText}`;
+    }).join(', ');
+
+    const calendarUrl = new URL('https://calendar.google.com/calendar/render');
+    calendarUrl.searchParams.append('action', 'TEMPLATE');
+    calendarUrl.searchParams.append('text', `${selectedLocation.name} Appointment`);
+    calendarUrl.searchParams.append('dates', `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`);
+    calendarUrl.searchParams.append('details', `Services: ${servicesList}\n\nConfirmation: ${confirmationNumber}`);
+    calendarUrl.searchParams.append('location', `${selectedLocation.address}, ${selectedLocation.city}, ${selectedLocation.state} ${selectedLocation.zip_code}`);
+
+    window.open(calendarUrl.toString(), '_blank');
+  };
+
+  const handleGetDirections = () => {
+    if (!selectedLocation) return;
+
+    const address = `${selectedLocation.address}, ${selectedLocation.city}, ${selectedLocation.state} ${selectedLocation.zip_code}`;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    
+    window.open(mapsUrl, '_blank');
   };
 
   return (
@@ -147,13 +206,13 @@ export default function BookingSuccess() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={handleAddToCalendar}>
             <Calendar className="h-4 w-4" />
             Add to Calendar
           </Button>
-          <Button variant="outline" className="gap-2">
-            <Phone className="h-4 w-4" />
-            Share Details
+          <Button variant="outline" className="gap-2" onClick={handleGetDirections}>
+            <MapPin className="h-4 w-4" />
+            Get Directions
           </Button>
         </div>
 
