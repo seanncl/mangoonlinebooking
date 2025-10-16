@@ -166,14 +166,27 @@ export default function StaffSelection() {
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    {/* Avatar */}
-                    <div className="text-5xl">{member.avatar_emoji}</div>
+                    {/* Avatar/Photo */}
+                    {member.photo_url ? (
+                      <img 
+                        src={member.photo_url} 
+                        alt={`${member.first_name} ${member.last_name}`}
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-5xl">{member.avatar_emoji}</div>
+                    )}
 
                     {/* Info */}
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg">
                         {member.first_name} {member.last_name}
                       </h3>
+                      {member.bio && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {member.bio}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
                         <span className="text-sm text-muted-foreground">
@@ -181,7 +194,6 @@ export default function StaffSelection() {
                         </span>
                       </div>
                     </div>
-
                   </div>
                 </Card>
               );

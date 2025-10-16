@@ -140,6 +140,11 @@ serve(async (req) => {
                   <span style="color: #6b7280; font-size: 14px;">
                     ${booking.location.address}, ${booking.location.city}, ${booking.location.state} ${booking.location.zip_code}
                   </span>
+                  <br>
+                  <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.location.address + ', ' + booking.location.city + ', ' + booking.location.state + ' ' + booking.location.zip_code)}" 
+                     style="display: inline-block; margin-top: 8px; padding: 8px 16px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600;">
+                    🗺️ Get Directions
+                  </a>
                 </div>
               </div>
 
@@ -222,7 +227,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Mango Nail Spa <onboarding@resend.dev>',
+        from: 'Mango Nail Spa <bookings@mangonailspa.com>',
         to: [booking.customer.email],
         subject: `Booking Confirmed - ${booking.confirmation_number}`,
         html,

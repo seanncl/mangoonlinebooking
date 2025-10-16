@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from '@/components/ui/calendar';
 import { BookingHeader } from '@/components/layout/BookingHeader';
@@ -8,8 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Clock, Users, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Clock, Users, Sparkles, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const TIME_SLOTS = {
   morning: ['9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM'],
@@ -29,9 +33,13 @@ export default function TimeSelection() {
     cart,
     startAllSameTime,
     setStartAllSameTime,
+    selectedLocation,
   } = useBooking();
 
   const [localDate, setLocalDate] = useState<Date | undefined>(selectedDate);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const totalDuration = cart.reduce((sum, item) => {
     const serviceDuration = item.service.duration_minutes;
@@ -42,10 +50,43 @@ export default function TimeSelection() {
   const staffCount = new Set(cart.map(item => item.staffId).filter(Boolean)).size;
   const hasMultipleStaff = staffCount > 1;
 
+  useEffect(() => {
+    if (localDate && selectedLocation) {
+      loadAvailability();
+    }
+  }, [localDate, selectedLocation]);
+
+  const loadAvailability = async () => {
+    if (!localDate || !selectedLocation) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('check-availability', {
+        body: {
+          locationId: selectedLocation.id,
+          date: format(localDate, 'yyyy-MM-dd'),
+          durationMinutes: totalDuration,
+        },
+      });
+
+      if (error) throw error;
+      setAvailableSlots(data.availableSlots || []);
+    } catch (err: any) {
+      console.error('Error loading availability:', err);
+      setError('Failed to load available times');
+      toast.error('Could not load availability');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDateSelect = (date: Date | undefined) => {
     setLocalDate(date);
     setSelectedDate(date);
     setSelectedTime(undefined);
+    setAvailableSlots([]);
   };
 
   const handleTimeSelect = (time: string) => {
@@ -140,93 +181,118 @@ export default function TimeSelection() {
                 Available Times - {format(localDate, 'EEEE, MMMM d')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Morning */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Morning</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                  {TIME_SLOTS.morning.map((time) => {
-                    const isBestFit = BEST_FIT_TIMES.includes(time);
-                    const isSelected = selectedTime === time;
-                    return (
-                      <button
-                        key={time}
-                        onClick={() => handleTimeSelect(time)}
-                        className={`relative px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background hover:bg-accent hover:text-accent-foreground'
-                        }`}
-                      >
-                        {time}
-                        {isBestFit && !isSelected && (
-                          <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-primary" />
-                        )}
-                      </button>
-                    );
-                  })}
+            <CardContent className="space-y-4">
+              {loading && (
+                <div className="text-center py-8">
+                  <div className="text-muted-foreground">Loading available times...</div>
                 </div>
-              </div>
+              )}
 
-              {/* Afternoon */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Afternoon</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                  {TIME_SLOTS.afternoon.map((time) => {
-                    const isBestFit = BEST_FIT_TIMES.includes(time);
-                    const isSelected = selectedTime === time;
-                    return (
-                      <button
-                        key={time}
-                        onClick={() => handleTimeSelect(time)}
-                        className={`relative px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background hover:bg-accent hover:text-accent-foreground'
-                        }`}
-                      >
-                        {time}
-                        {isBestFit && !isSelected && (
-                          <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-primary" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between">
+                    <span>{error}</span>
+                    <Button variant="outline" size="sm" onClick={loadAvailability}>
+                      Retry
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
 
-              {/* Evening */}
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Evening</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                  {TIME_SLOTS.evening.map((time) => {
-                    const isBestFit = BEST_FIT_TIMES.includes(time);
-                    const isSelected = selectedTime === time;
-                    return (
-                      <button
-                        key={time}
-                        onClick={() => handleTimeSelect(time)}
-                        className={`relative px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background hover:bg-accent hover:text-accent-foreground'
-                        }`}
-                      >
-                        {time}
-                        {isBestFit && !isSelected && (
-                          <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-primary" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {!loading && !error && availableSlots.length === 0 && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No available times for this date. Please select another date.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-              {BEST_FIT_TIMES.length > 0 && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span>Best fit times based on your services</span>
-                </div>
+              {!loading && !error && availableSlots.length > 0 && (
+                <>
+                  {/* Categorize slots */}
+                  {(() => {
+                    const morning = availableSlots.filter(s => s.includes('AM') || s === '12:00 PM' || s === '12:30 PM');
+                    const afternoon = availableSlots.filter(s => {
+                      const time = s.split(' ')[0];
+                      const hour = parseInt(time.split(':')[0]);
+                      return s.includes('PM') && hour >= 1 && hour <= 3;
+                    });
+                    const evening = availableSlots.filter(s => {
+                      const time = s.split(' ')[0];
+                      const hour = parseInt(time.split(':')[0]);
+                      return s.includes('PM') && hour >= 4;
+                    });
+
+                    return (
+                      <div className="space-y-6">
+                        {morning.length > 0 && (
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-3">Morning</h3>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                              {morning.map((time) => (
+                                <button
+                                  key={time}
+                                  onClick={() => handleTimeSelect(time)}
+                                  className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                                    selectedTime === time
+                                      ? 'bg-primary text-primary-foreground border-primary'
+                                      : 'bg-background hover:bg-accent hover:text-accent-foreground'
+                                  }`}
+                                >
+                                  {time}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {afternoon.length > 0 && (
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-3">Afternoon</h3>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                              {afternoon.map((time) => (
+                                <button
+                                  key={time}
+                                  onClick={() => handleTimeSelect(time)}
+                                  className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                                    selectedTime === time
+                                      ? 'bg-primary text-primary-foreground border-primary'
+                                      : 'bg-background hover:bg-accent hover:text-accent-foreground'
+                                  }`}
+                                >
+                                  {time}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {evening.length > 0 && (
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-3">Evening</h3>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                              {evening.map((time) => (
+                                <button
+                                  key={time}
+                                  onClick={() => handleTimeSelect(time)}
+                                  className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                                    selectedTime === time
+                                      ? 'bg-primary text-primary-foreground border-primary'
+                                      : 'bg-background hover:bg-accent hover:text-accent-foreground'
+                                  }`}
+                                >
+                                  {time}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </>
               )}
             </CardContent>
           </Card>

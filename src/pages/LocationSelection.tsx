@@ -1,25 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Phone, Clock } from 'lucide-react';
+import { MapPin, Phone, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useBooking } from '@/context/BookingContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Location } from '@/types/booking';
 import locationDowntownImg from '@/assets/location-downtown.jpg';
 import locationBeverlyImg from '@/assets/location-beverly.jpg';
+import { toast } from 'sonner';
 
 export default function LocationSelection() {
   const navigate = useNavigate();
   const { setSelectedLocation } = useBooking();
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadLocations();
   }, []);
 
   const loadLocations = async () => {
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('locations')
@@ -28,8 +32,10 @@ export default function LocationSelection() {
 
       if (error) throw error;
       setLocations(data || []);
-    } catch (error) {
-      console.error('Error loading locations:', error);
+    } catch (err: any) {
+      console.error('Error loading locations:', err);
+      setError('Failed to load locations');
+      toast.error('Could not load locations');
     } finally {
       setLoading(false);
     }
@@ -53,6 +59,22 @@ export default function LocationSelection() {
           <div className="text-4xl mb-4">💅</div>
           <p className="text-muted-foreground">Loading locations...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button variant="outline" size="sm" onClick={loadLocations}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
