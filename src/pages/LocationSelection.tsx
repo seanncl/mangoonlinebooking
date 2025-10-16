@@ -61,15 +61,18 @@ export default function LocationSelection() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       {/* Header */}
-      <header className="py-8 px-4 text-center border-b bg-background/80 backdrop-blur relative">
-        <div className="absolute right-4 top-8">
-          <UserProfileButton />
+      <header className="py-6 px-4 border-b bg-background/80 backdrop-blur">
+        <div className="container max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div className="w-[44px]" />
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">💅</span>
+              <h1 className="text-2xl md:text-3xl font-bold text-accent">Mango Nail Spa</h1>
+            </div>
+            <UserProfileButton />
+          </div>
+          <p className="text-center text-muted-foreground">Your beauty destination</p>
         </div>
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <span className="text-4xl">💅</span>
-          <h1 className="text-3xl font-bold text-accent">Mango Nail Spa</h1>
-        </div>
-        <p className="text-muted-foreground">Your beauty destination</p>
       </header>
 
       {/* Content */}
