@@ -8,6 +8,7 @@ import LocationSelection from "./pages/LocationSelection";
 import BookingFlowSelection from "./pages/BookingFlowSelection";
 import ServiceSelection from "./pages/ServiceSelection";
 import StaffSelection from "./pages/StaffSelection";
+import StaffAssignment from "./pages/StaffAssignment";
 import TimeSelection from "./pages/TimeSelection";
 import ClientInfo from "./pages/ClientInfo";
 import PhoneVerification from "./pages/PhoneVerification";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/booking-flow" element={<BookingFlowSelection />} />
             <Route path="/services" element={<ServiceSelection />} />
             <Route path="/staff" element={<StaffSelection />} />
+            <Route path="/staff-assignment" element={<StaffAssignment />} />
             <Route path="/time" element={<TimeSelection />} />
             <Route path="/info" element={<ClientInfo />} />
             <Route path="/verify" element={<PhoneVerification />} />

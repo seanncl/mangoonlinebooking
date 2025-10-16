@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
@@ -19,6 +20,8 @@ export default function StaffSelection() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDecisionDialog, setShowDecisionDialog] = useState(false);
+  const [selectedStaffMember, setSelectedStaffMember] = useState<Staff | null>(null);
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -82,17 +85,42 @@ export default function StaffSelection() {
   };
 
   const handleSelectStaff = (staffId: string) => {
+    const staffMember = staff.find(s => s.id === staffId);
+    if (!staffMember) return;
+
     // If staff-first flow, store preferred staff and go to services
     if (bookingFlowType === 'staff-first') {
       setPreferredStaff(staffId);
       navigate('/services');
+      return;
+    }
+
+    // Service-first flow: check if multiple services
+    if (cart.length > 1) {
+      setSelectedStaffMember(staffMember);
+      setShowDecisionDialog(true);
     } else {
-      // Service-first flow: assign same staff to all services in cart
-      cart.forEach(item => {
-        updateCartItemStaff(item.service.id, staffId);
-      });
+      // Single service: assign and go to time
+      updateCartItemStaff(cart[0].service.id, staffId);
       navigate('/time');
     }
+  };
+
+  const handleAssignToAll = () => {
+    if (!selectedStaffMember) return;
+    cart.forEach(item => {
+      updateCartItemStaff(item.service.id, selectedStaffMember.id);
+    });
+    setShowDecisionDialog(false);
+    navigate('/time');
+  };
+
+  const handleDifferentTechnicians = () => {
+    if (!selectedStaffMember) return;
+    // Assign selected staff to first service
+    updateCartItemStaff(cart[0].service.id, selectedStaffMember.id);
+    setShowDecisionDialog(false);
+    navigate('/staff-assignment');
   };
 
   const handleNoPreference = () => {
@@ -199,6 +227,49 @@ export default function StaffSelection() {
       </main>
 
       <BookingFooter hideNext />
+
+      {/* Multi-Staff Decision Dialog */}
+      <Dialog open={showDecisionDialog} onOpenChange={setShowDecisionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Technician</DialogTitle>
+            <DialogDescription>
+              You have selected {selectedStaffMember?.first_name} {selectedStaffMember?.last_name}. 
+              Would you like them to perform all your services?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3 py-4">
+            <Button
+              variant="default"
+              className="w-full justify-start h-auto p-4"
+              onClick={handleAssignToAll}
+            >
+              <div className="text-left">
+                <div className="font-semibold">
+                  Yes, assign {selectedStaffMember?.first_name} to all services
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  All {cart.length} services will be performed by the same technician
+                </div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto p-4"
+              onClick={handleDifferentTechnicians}
+            >
+              <div className="text-left">
+                <div className="font-semibold">I want different technicians</div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  Choose a technician for each service individually
+                </div>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

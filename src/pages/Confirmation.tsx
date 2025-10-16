@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Clock, MapPin, Mail, Phone, Shield, Star } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Calendar, Clock, MapPin, Mail, Phone, Shield, Star, CreditCard, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,9 +29,98 @@ export default function Confirmation() {
 
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState({
+    cardNumber: '',
+    expiry: '',
+    cvv: '',
+    cardholderName: '',
+  });
+  const [paymentErrors, setPaymentErrors] = useState({
+    cardNumber: '',
+    expiry: '',
+    cvv: '',
+    cardholderName: '',
+  });
 
   const hasDepositPolicy = selectedLocation?.has_deposit_policy;
   const balanceDue = cartTotal - depositAmount;
+
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\s/g, '');
+    const chunks = cleaned.match(/.{1,4}/g) || [];
+    return chunks.join(' ');
+  };
+
+  const validateCardNumber = (value: string) => {
+    const cleaned = value.replace(/\s/g, '');
+    if (!cleaned) return 'Card number is required';
+    if (cleaned.length !== 16) return 'Card number must be 16 digits';
+    if (!/^\d+$/.test(cleaned)) return 'Card number must contain only digits';
+    return '';
+  };
+
+  const validateExpiry = (value: string) => {
+    if (!value) return 'Expiry date is required';
+    const [month, year] = value.split('/').map(v => v.trim());
+    if (!month || !year) return 'Use MM/YY format';
+    
+    const monthNum = parseInt(month);
+    const yearNum = parseInt(year);
+    const currentYear = new Date().getFullYear() % 100;
+    const currentMonth = new Date().getMonth() + 1;
+    
+    if (monthNum > 12 || monthNum < 1) return 'Invalid month';
+    if (yearNum < currentYear) return 'Card is expired';
+    if (yearNum === currentYear && monthNum < currentMonth) return 'Card is expired';
+    return '';
+  };
+
+  const validateCVV = (value: string) => {
+    if (!value) return 'CVV is required';
+    if (value.length < 3 || value.length > 4) return 'CVV must be 3 or 4 digits';
+    if (!/^\d+$/.test(value)) return 'CVV must contain only digits';
+    return '';
+  };
+
+  const validateCardholderName = (value: string) => {
+    if (!value.trim()) return 'Cardholder name is required';
+    if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name must contain only letters';
+    return '';
+  };
+
+  const handlePaymentInputChange = (field: string, value: string) => {
+    let formattedValue = value;
+    
+    if (field === 'cardNumber') {
+      formattedValue = formatCardNumber(value.replace(/\D/g, '').slice(0, 16));
+    } else if (field === 'expiry') {
+      const cleaned = value.replace(/\D/g, '').slice(0, 4);
+      if (cleaned.length >= 2) {
+        formattedValue = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+      } else {
+        formattedValue = cleaned;
+      }
+    } else if (field === 'cvv') {
+      formattedValue = value.replace(/\D/g, '').slice(0, 4);
+    }
+    
+    setPaymentDetails(prev => ({ ...prev, [field]: formattedValue }));
+    setPaymentErrors(prev => ({ ...prev, [field]: '' }));
+  };
+
+  const validatePaymentForm = () => {
+    if (!hasDepositPolicy) return true;
+
+    const errors = {
+      cardNumber: validateCardNumber(paymentDetails.cardNumber),
+      expiry: validateExpiry(paymentDetails.expiry),
+      cvv: validateCVV(paymentDetails.cvv),
+      cardholderName: validateCardholderName(paymentDetails.cardholderName),
+    };
+
+    setPaymentErrors(errors);
+    return !Object.values(errors).some(error => error !== '');
+  };
 
   const handleBookNow = async () => {
     if (!policyAccepted) {
@@ -41,7 +132,21 @@ export default function Confirmation() {
       return;
     }
 
+    if (!validatePaymentForm()) {
+      toast({
+        title: 'Invalid Payment Details',
+        description: 'Please check your payment information.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsProcessing(true);
+
+    // Mock payment processing delay (2 seconds)
+    if (hasDepositPolicy) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
 
     try {
       // Call edge function to create booking
@@ -171,6 +276,104 @@ export default function Confirmation() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Payment Details - Only show if deposit required */}
+        {hasDepositPolicy && (
+          <Card className="mb-6 border-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Payment Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Deposit Summary */}
+              <div className="bg-primary-light p-4 rounded-lg space-y-1">
+                <p className="text-sm text-muted-foreground">Deposit Due Today</p>
+                <p className="text-3xl font-bold text-primary">${depositAmount.toFixed(2)}</p>
+                <p className="text-sm text-muted-foreground">
+                  Balance at Salon: ${balanceDue.toFixed(2)}
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* Card Information */}
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="cardNumber">Card Number</Label>
+                  <div className="relative">
+                    <Input
+                      id="cardNumber"
+                      placeholder="1234 5678 9012 3456"
+                      value={paymentDetails.cardNumber}
+                      onChange={(e) => handlePaymentInputChange('cardNumber', e.target.value)}
+                      className={paymentErrors.cardNumber ? 'border-destructive' : ''}
+                      maxLength={19}
+                    />
+                    <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                  {paymentErrors.cardNumber && (
+                    <p className="text-sm text-destructive mt-1">{paymentErrors.cardNumber}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="expiry">Expiry Date</Label>
+                    <Input
+                      id="expiry"
+                      placeholder="MM/YY"
+                      value={paymentDetails.expiry}
+                      onChange={(e) => handlePaymentInputChange('expiry', e.target.value)}
+                      className={paymentErrors.expiry ? 'border-destructive' : ''}
+                      maxLength={5}
+                    />
+                    {paymentErrors.expiry && (
+                      <p className="text-sm text-destructive mt-1">{paymentErrors.expiry}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cvv">CVV</Label>
+                    <Input
+                      id="cvv"
+                      placeholder="123"
+                      type="password"
+                      value={paymentDetails.cvv}
+                      onChange={(e) => handlePaymentInputChange('cvv', e.target.value)}
+                      className={paymentErrors.cvv ? 'border-destructive' : ''}
+                      maxLength={4}
+                    />
+                    {paymentErrors.cvv && (
+                      <p className="text-sm text-destructive mt-1">{paymentErrors.cvv}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="cardholderName">Cardholder Name</Label>
+                  <Input
+                    id="cardholderName"
+                    placeholder="John Doe"
+                    value={paymentDetails.cardholderName}
+                    onChange={(e) => handlePaymentInputChange('cardholderName', e.target.value)}
+                    className={paymentErrors.cardholderName ? 'border-destructive' : ''}
+                  />
+                  {paymentErrors.cardholderName && (
+                    <p className="text-sm text-destructive mt-1">{paymentErrors.cardholderName}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Security Message */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <Lock className="h-4 w-4" />
+                <span>Your payment information is secure and encrypted</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Customer Info */}
         <Card className="mb-6">
