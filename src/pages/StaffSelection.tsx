@@ -237,16 +237,16 @@ export default function StaffSelection() {
                   <Card
                     key={member.id}
                     onClick={() => handleSelectStaff(member.id)}
-                    className="p-4 transition-all cursor-pointer hover:shadow-lg hover:border-primary/50 rounded-xl"
+                    className="p-4 transition-all cursor-pointer hover:shadow-md rounded-2xl bg-card border"
                   >
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-center gap-3">
                       {/* Avatar - Use photo if available, fallback to emoji */}
                       <div className="flex-shrink-0">
                         {member.photo_url ? (
                           <img
                             src={member.photo_url}
                             alt={`${member.first_name} ${member.last_name}`}
-                            className="w-16 h-16 rounded-full object-cover"
+                            className="w-12 h-12 rounded-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
                               const emojiDiv = e.currentTarget.nextElementSibling;
@@ -254,51 +254,33 @@ export default function StaffSelection() {
                             }}
                           />
                         ) : null}
-                        <div className={`text-5xl ${member.photo_url ? 'hidden' : ''}`}>
+                        <div className={`text-4xl leading-none ${member.photo_url ? 'hidden' : ''}`}>
                           {member.avatar_emoji}
                         </div>
                       </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg">
-                          {member.first_name} {member.last_name}
+                        <h3 className="font-semibold text-base">
+                          {member.first_name}
                         </h3>
                         
-                        {member.bio && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {member.bio}
-                          </p>
-                        )}
-                        
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-1.5 mt-0.5">
                           <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
                           <span className="text-sm text-muted-foreground">
                             {getAvailabilityText(member)}
                           </span>
                         </div>
-                        
-                        {member.specialties && member.specialties.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {member.specialties.slice(0, 3).map((specialty, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs px-2 py-0.5">
-                                {specialty}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
                       </div>
 
-                      {/* View Schedule Button */}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="gap-2 text-primary flex-shrink-0"
+                      {/* View Schedule Link */}
+                      <button
                         onClick={(e) => handleViewSchedule(e, member)}
+                        className="flex items-center gap-1.5 text-sm text-cyan-500 hover:text-cyan-600 transition-colors flex-shrink-0"
                       >
-                        <Calendar className="h-4 w-4" />
-                        <span className="hidden sm:inline">View Schedule</span>
-                      </Button>
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>View Schedule</span>
+                      </button>
                     </div>
                   </Card>
                 );
