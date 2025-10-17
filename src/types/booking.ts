@@ -46,6 +46,7 @@ export interface Staff {
   status: StaffStatus;
   next_available_time?: string;
   specialties?: string[];
+  service_ids?: string[]; // Services this staff can perform (empty/undefined = all services)
   is_active: boolean;
   display_order: number;
 }

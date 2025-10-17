@@ -78,7 +78,28 @@ export default function ServiceSelection() {
         throw new Error(response.error || 'Failed to load services');
       }
 
-      setServices(response.data);
+      let allServices = response.data;
+
+      // Filter services by selected staff in staff-first flow
+      if (bookingFlowType === 'staff-first' && selectedStaff && selectedStaff.length > 0) {
+        // Collect all service IDs that any selected staff can perform
+        const allowedServiceIds = new Set<string>();
+        
+        selectedStaff.forEach(staff => {
+          if (!staff.service_ids || staff.service_ids.length === 0) {
+            // Staff can perform all services - add all service IDs
+            allServices.forEach(s => allowedServiceIds.add(s.id));
+          } else {
+            // Add this staff's specific service IDs
+            staff.service_ids.forEach(id => allowedServiceIds.add(id));
+          }
+        });
+
+        // Filter to only show services that selected staff can perform
+        allServices = allServices.filter(service => allowedServiceIds.has(service.id));
+      }
+
+      setServices(allServices);
     } catch (error) {
       console.error('Error loading services:', error);
       toast.error('Failed to load services');
@@ -237,7 +258,7 @@ export default function ServiceSelection() {
                         {selectedStaff[0].first_name} {selectedStaff[0].last_name}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Your selected staff
+                        Showing available services
                       </div>
                     </div>
                   </>
