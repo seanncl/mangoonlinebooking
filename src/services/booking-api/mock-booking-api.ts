@@ -133,13 +133,22 @@ export class MockBookingAPI implements IBookingAPI {
       // 4. Consider the total duration and startAllSameTime parameter
 
       // For mock: Create consistent but varied availability based on date
-      const date = new Date(params.date);
+      // Parse date string in local timezone (not UTC)
+      const [year, month, day] = params.date.split('-').map(Number);
+      const date = new Date(year, month - 1, day); // month is 0-indexed
       const dayOfWeek = date.getDay();
+      
+      console.log('Mock API - Date string:', params.date);
+      console.log('Mock API - Parsed date:', date.toLocaleDateString());
+      console.log('Mock API - Day of week:', dayOfWeek, ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]);
       
       // Simulate realistic booking patterns:
       // - Weekends (Sat/Sun) are busier - remove more slots
       // - Mid-week has good availability
       const removalRate = (dayOfWeek === 0 || dayOfWeek === 6) ? 0.4 : 0.25;
+      
+      console.log('Mock API - Removal rate:', removalRate);
+      console.log('Mock API - Total slots before filtering:', allSlots.length);
       
       // Use date as seed for consistent results per date
       const dateSeed = date.getTime();
@@ -148,6 +157,8 @@ export class MockBookingAPI implements IBookingAPI {
         const slotSeed = (dateSeed + index * 1000) % 100;
         return slotSeed > (removalRate * 100);
       });
+      
+      console.log('Mock API - Available slots after filtering:', availableSlots.length);
 
       // Best fit slots (mid-morning, early afternoon, late afternoon)
       const bestFitSlots = availableSlots.filter((slot) => {
