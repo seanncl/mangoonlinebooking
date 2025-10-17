@@ -513,24 +513,6 @@ export default function ClientInfo() {
                   </div>
                 </div>
 
-                <Separator className="my-4" />
-
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id="create-account"
-                    checked={createAccount}
-                    onCheckedChange={(checked) => setCreateAccount(checked as boolean)}
-                  />
-                  <div className="flex-1">
-                    <Label htmlFor="create-account" className="cursor-pointer">
-                      Create account for easier rebooking
-                    </Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Save your preferences and manage appointments
-                    </p>
-                  </div>
-                </div>
-
                 <Button
                   onClick={() => handleCollectInfo(false)}
                   disabled={isLoading}
