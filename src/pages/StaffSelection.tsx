@@ -24,8 +24,6 @@ export default function StaffSelection() {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleStaff, setScheduleStaff] = useState<Staff | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
-  const [multiSelectMode, setMultiSelectMode] = useState(false);
-  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -87,51 +85,17 @@ export default function StaffSelection() {
   };
 
   const handleSelectStaff = (staffId: string) => {
-    const staffMember = staff.find(s => s.id === staffId);
-    if (!staffMember) return;
-
-    // Multi-select mode
-    if (multiSelectMode && bookingFlowType === 'staff-first') {
-      if (selectedStaffIds.includes(staffId)) {
-        setSelectedStaffIds(selectedStaffIds.filter(id => id !== staffId));
-      } else {
-        setSelectedStaffIds([...selectedStaffIds, staffId]);
-      }
-      return;
-    }
-
-    // If staff-first flow (single select), store preferred staff and go to services
-    if (bookingFlowType === 'staff-first') {
-      setPreferredStaff([staffId]);
-      navigate('/services');
-      return;
-    }
-
-    // Service-first flow: assign staff to all services and go to time
-    cart.forEach(item => {
-      updateCartItemStaff(item.service.id, staffId);
-    });
-    navigate('/time');
-  };
-
-  const handleContinueMultiSelect = () => {
-    if (selectedStaffIds.length === 0) {
-      toast.error('Please select at least one staff member');
-      return;
-    }
-    setPreferredStaff(selectedStaffIds);
+    // Always set single staff and navigate to services
+    setPreferredStaff([staffId]);
     navigate('/services');
   };
 
-  const toggleMultiSelect = () => {
-    setMultiSelectMode(!multiSelectMode);
-    setSelectedStaffIds([]);
+  const handleNoPreference = () => {
+    setPreferredStaff([]);
+    navigate('/services');
   };
 
-  const handleNoPreference = () => {
-    cart.forEach(item => {
-      updateCartItemStaff(item.service.id, undefined);
-    });
+  const handleContinueToTime = () => {
     navigate('/time');
   };
 
@@ -198,26 +162,11 @@ export default function StaffSelection() {
 
           {/* Staff Selection Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
             <div>
               <h1 className="text-lg font-bold mb-1">Choose Your Staff</h1>
               <p className="text-xs text-muted-foreground">
-                {multiSelectMode && bookingFlowType === 'staff-first' 
-                  ? 'Select multiple staff for your services' 
-                  : 'Choose who you\'d like to perform your service'}
+                Choose who you'd like to perform your service
               </p>
-            </div>
-              {bookingFlowType === 'staff-first' && (
-                <Button
-                  variant={multiSelectMode ? "default" : "outline"}
-                  size="sm"
-                  onClick={toggleMultiSelect}
-                  className="gap-2"
-                >
-                  <Users className="h-4 w-4" />
-                  {multiSelectMode ? 'Single Select' : 'Multi-Select'}
-                </Button>
-              )}
             </div>
 
             {/* Search */}
@@ -232,8 +181,26 @@ export default function StaffSelection() {
               />
             </div>
 
-            {/* Choose Multiple Staff Option - Only for multiple services */}
-            {cart.length > 1 && (
+            {/* No Preference Option */}
+            <Card
+              onClick={handleNoPreference}
+              className="p-4 cursor-pointer hover:shadow-md transition-all rounded-2xl bg-card border"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 text-4xl leading-none">
+                  🎲
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-base">No Preference</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    First available staff
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Choose Multiple Staff Option - Only for service-first with multiple services */}
+            {bookingFlowType === 'service-first' && cart.length > 1 && (
               <Card
                 className="p-4 cursor-pointer hover:border-primary transition-colors bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 rounded-2xl"
                 onClick={() => navigate('/staff-assignment')}
@@ -252,52 +219,30 @@ export default function StaffSelection() {
               </Card>
             )}
 
-            {/* No Preference Option - Only show in service-first flow */}
-            {bookingFlowType === 'service-first' && cart.length > 0 && (
-              <Card
-                onClick={handleNoPreference}
-                className="p-4 cursor-pointer hover:shadow-md transition-all rounded-2xl bg-card border"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 text-4xl leading-none">
-                    🎲
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-base">No Preference</h3>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      First available staff
-                    </p>
-                  </div>
-                </div>
-              </Card>
+            {/* Continue to Time Selection - Show in staff-first when cart has items */}
+            {bookingFlowType === 'staff-first' && cart.length > 0 && (
+              <div className="mt-4">
+                <Button
+                  onClick={handleContinueToTime}
+                  size="lg"
+                  className="w-full bg-primary hover:bg-primary-hover"
+                >
+                  Continue to Time Selection
+                </Button>
+              </div>
             )}
 
             {/* Staff Grid */}
             <div className="space-y-3">
               {filteredStaff.map((member) => {
                 const statusConfig = getStatusConfig(member.status);
-                const isSelected = multiSelectMode && selectedStaffIds.includes(member.id);
                 return (
                   <Card
                     key={member.id}
                     onClick={() => handleSelectStaff(member.id)}
-                    className={cn(
-                      "p-4 transition-all cursor-pointer hover:shadow-md rounded-2xl bg-card border",
-                      isSelected && "border-primary bg-primary/5"
-                    )}
+                    className="p-4 transition-all cursor-pointer hover:shadow-md rounded-2xl bg-card border"
                   >
                     <div className="flex items-center gap-3">
-                      {/* Checkbox for multi-select mode */}
-                      {multiSelectMode && bookingFlowType === 'staff-first' && (
-                        <div className="flex-shrink-0">
-                          <div className={cn(
-                            "w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors",
-                            isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
-                          )}>
-                            {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
-                          </div>
-                        </div>
-                      )}
                       
                       {/* Avatar - Use photo if available, fallback to emoji */}
                       <div className="flex-shrink-0">
@@ -370,10 +315,7 @@ export default function StaffSelection() {
       </main>
 
       <BookingFooter 
-        hideNext={!multiSelectMode || bookingFlowType !== 'staff-first'}
-        onNext={handleContinueMultiSelect}
-        nextLabel={`Continue with ${selectedStaffIds.length} Staff${selectedStaffIds.length !== 1 ? '' : ''}`}
-        nextDisabled={selectedStaffIds.length === 0}
+        hideNext={true}
       />
       
       {/* Cart Sheet */}

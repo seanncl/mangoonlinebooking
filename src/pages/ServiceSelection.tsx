@@ -169,29 +169,15 @@ export default function ServiceSelection() {
 
   const handleNext = () => {
     if (cart.length === 0) {
-      toast.error('Please select at least one service');
+      toast.error('Please add at least one service to continue');
       return;
     }
 
-    // For staff-first flow
-    if (bookingFlowType === 'staff-first' && preferredStaffIds && preferredStaffIds.length > 0) {
-      // If only one staff selected, auto-assign to all services
-      if (preferredStaffIds.length === 1) {
-        cart.forEach(item => {
-          if (!item.staffId) {
-            updateCartItemStaff(item.service.id, preferredStaffIds[0]);
-          }
-        });
-        navigate('/time');
-      } else {
-        // Multiple staff selected, navigate to staff assignment page
-        navigate('/staff-assignment');
-      }
-      return;
-    }
-
-    // Service-first flow or no staff selected
-    if (bookingFlowType === 'service-first') {
+    // In staff-first flow, navigate back to staff selection to add more staff
+    if (bookingFlowType === 'staff-first') {
+      navigate('/staff');
+    } else if (bookingFlowType === 'service-first' && cart.length > 1) {
+      // In service-first flow with multiple services, show staff assignment option
       navigate('/staff');
     } else {
       navigate('/time');
@@ -668,7 +654,8 @@ export default function ServiceSelection() {
       </Dialog>
 
       <BookingFooter
-        nextLabel="Next"
+        onBack={() => navigate('/staff')}
+        nextLabel={bookingFlowType === 'staff-first' ? 'Add Another Staff' : 'Continue'}
         onNext={handleNext}
         nextDisabled={cart.length === 0}
       />
