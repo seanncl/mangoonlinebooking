@@ -1,5 +1,5 @@
 import { X, ShoppingBag, ChevronDown, Plus, Info } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useBooking } from '@/context/BookingContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ interface CartSheetProps {
 
 export const CartSheet = ({ open: controlledOpen, onOpenChange }: CartSheetProps = {}) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { selectedLocation, cart, cartTotal, depositAmount, removeFromCart, addToCart } = useBooking();
   const [internalOpen, setInternalOpen] = useState(false);
   
@@ -89,6 +90,68 @@ export const CartSheet = ({ open: controlledOpen, onOpenChange }: CartSheetProps
     addToCart({ service, addOns: [] });
     loadAvailableServices(); // Refresh available services
   };
+
+  const getCartActions = () => {
+    const currentPath = location.pathname;
+    
+    switch (currentPath) {
+      case '/services':
+        return {
+          primaryLabel: 'Proceed to Select Staff',
+          primaryAction: () => {
+            setCartOpen(false);
+            navigate('/staff');
+          },
+          secondaryLabel: 'Continue Browsing',
+          secondaryAction: () => setCartOpen(false),
+          showButtons: true,
+        };
+      
+      case '/staff':
+      case '/staff-assignment':
+        return {
+          primaryLabel: 'Continue to Select Time',
+          primaryAction: () => {
+            setCartOpen(false);
+            navigate('/time');
+          },
+          secondaryLabel: currentPath === '/staff-assignment' ? 'Back to Services' : 'Continue Browsing',
+          secondaryAction: () => {
+            setCartOpen(false);
+            if (currentPath === '/staff-assignment') {
+              navigate('/services');
+            }
+          },
+          showButtons: true,
+        };
+      
+      case '/time':
+        return {
+          primaryLabel: 'Continue to Select Time',
+          primaryAction: () => setCartOpen(false),
+          secondaryLabel: 'Modify Services',
+          secondaryAction: () => {
+            setCartOpen(false);
+            navigate('/services');
+          },
+          showButtons: true,
+        };
+      
+      default:
+        return {
+          primaryLabel: 'Proceed to Select Staff',
+          primaryAction: () => {
+            setCartOpen(false);
+            navigate('/staff');
+          },
+          secondaryLabel: 'Continue Browsing',
+          secondaryAction: () => setCartOpen(false),
+          showButtons: true,
+        };
+    }
+  };
+
+  const cartActions = getCartActions();
 
   const groupedServices = availableServices.reduce((acc, service) => {
     if (!acc[service.category]) {
@@ -289,23 +352,20 @@ export const CartSheet = ({ open: controlledOpen, onOpenChange }: CartSheetProps
         </div>
 
         {/* Action Buttons */}
-        {cart.length > 0 && (
+        {cart.length > 0 && cartActions.showButtons && (
           <div className="space-y-2 p-6 border-t mt-auto">
             <Button 
               variant="outline"
               className="w-full"
-              onClick={() => setCartOpen(false)}
+              onClick={cartActions.secondaryAction}
             >
-              Continue Browsing
+              {cartActions.secondaryLabel}
             </Button>
             <Button 
               className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
-              onClick={() => {
-                setCartOpen(false);
-                navigate('/staff');
-              }}
+              onClick={cartActions.primaryAction}
             >
-              Proceed to Select Staff
+              {cartActions.primaryLabel}
             </Button>
           </div>
         )}
