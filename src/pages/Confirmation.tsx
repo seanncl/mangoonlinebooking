@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
-import { MapPin, Calendar, Clock, CreditCard, Phone, Mail, Shield, Star, Pencil } from 'lucide-react';
+import { MapPin, Calendar, Clock, CreditCard, Phone, Mail, Shield, Star, Pencil, ChevronDown, FileText, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
@@ -40,9 +40,13 @@ export default function Confirmation() {
     cardholderName: '',
   });
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
+  const [showFullPolicy, setShowFullPolicy] = useState(false);
 
   const hasDepositPolicy = selectedLocation?.has_deposit_policy || false;
   const balanceDue = cartTotal - depositAmount;
+
+  // Calculate total duration
+  const totalDuration = cart.reduce((sum, item) => sum + item.service.duration_minutes, 0);
 
   // Helper to get staff name
   const getStaffName = (staffId?: string) => {
@@ -201,120 +205,129 @@ export default function Confirmation() {
 
       <main className="flex-1 container max-w-2xl px-4 py-6 pb-24">
         {/* Booking Summary */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Booking Summary</h2>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/services')}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </div>
-
         <Card className="mb-6">
-          <CardContent className="pt-6 space-y-4">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-base">Booking Summary</CardTitle>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/services')}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Services Section */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                SERVICES
+              </p>
+              {cart.map((item, index) => (
+                <div key={index} className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="font-medium">{item.service.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.staffId && `with ${getStaffName(item.staffId)} • `}
+                      {item.service.duration_minutes} min
+                    </p>
+                  </div>
+                  <p className="font-semibold">${item.service.price_card.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+
+            <Separator />
+
+            {/* Date */}
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-sm text-muted-foreground">Date</p>
+                <p className="font-medium">
+                  {selectedDate && format(selectedDate, 'EEEE, MMM d, yyyy')}
+                </p>
+              </div>
+            </div>
+
+            {/* Time */}
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-sm text-muted-foreground">Time</p>
+                <p className="font-medium">{selectedTime}</p>
+                <p className="text-sm text-muted-foreground">{totalDuration} min total</p>
+              </div>
+            </div>
+
             {/* Location */}
             <div className="flex items-start gap-3">
               <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
+                <p className="text-sm text-muted-foreground">Location</p>
                 <p className="font-medium">{selectedLocation?.name}</p>
-                <p className="text-sm text-muted-foreground">{selectedLocation?.address}</p>
+                <button className="text-sm text-primary hover:underline">
+                  Get directions
+                </button>
               </div>
             </div>
 
             <Separator />
 
-            {/* Date & Time */}
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">Date & Time</span>
-              <Button variant="ghost" size="icon" onClick={() => navigate('/time')}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <p className="font-medium">
-                {selectedDate && format(selectedDate, 'EEEE, MMMM d, yyyy')}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <p className="font-medium">{selectedTime}</p>
-            </div>
-
-            <Separator />
-
-            {/* Services with Staff */}
-            {cart.map((item, index) => (
-              <div key={index} className="flex justify-between py-2">
-                <div>
-                  <p className="font-medium">{item.service.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.service.duration_minutes} min
-                    {item.staffId && ` • with ${getStaffName(item.staffId)}`}
-                  </p>
-                  {item.addOns.length > 0 && (
-                    <ul className="text-xs text-muted-foreground mt-1 ml-4">
-                      {item.addOns.map((addOn) => (
-                        <li key={addOn.id}>+ {addOn.name}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <p className="font-medium">${item.service.price_card.toFixed(2)}</p>
-              </div>
-            ))}
-
-            <Separator />
-
-            {/* Totals */}
+            {/* Price Breakdown */}
             <div className="space-y-2">
-              <div className="flex justify-between text-lg font-semibold">
-                <span>Total</span>
-                <span>${cartTotal.toFixed(2)}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium">${cartTotal.toFixed(2)}</span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Contact Information */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Contact Information</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => navigate('/client-info')}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Phone</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{customer?.phone}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Email</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{customer?.email}</span>
+              {hasDepositPolicy && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Deposit ({selectedLocation?.deposit_percentage}%)
+                    </span>
+                    <span className="font-medium">${depositAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Remaining (pay at salon)</span>
+                    <span className="font-medium">${balanceDue.toFixed(2)}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Due Now</span>
+                    <span className="text-2xl font-bold text-primary">
+                      ${depositAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
 
 
-        {/* Cancellation Policy - MOVED BEFORE PAYMENT */}
+        {/* Cancellation Policy */}
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">Cancellation Policy</CardTitle>
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base">Cancellation Policy</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              {selectedLocation?.cancellation_policy}
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {showFullPolicy
+                ? selectedLocation?.cancellation_policy
+                : selectedLocation?.cancellation_policy?.slice(0, 100) + '...'}
             </p>
-            <div className="flex items-start space-x-2">
+            <button
+              onClick={() => setShowFullPolicy(!showFullPolicy)}
+              className="flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              {showFullPolicy ? 'Show less' : 'Read complete policy'}
+              <ChevronDown className={`h-4 w-4 transition-transform ${showFullPolicy ? 'rotate-180' : ''}`} />
+            </button>
+            <div className="flex items-start space-x-2 pt-2">
               <Checkbox
                 id="policy"
                 checked={policyAccepted}
@@ -324,55 +337,44 @@ export default function Confirmation() {
                 htmlFor="policy"
                 className="text-sm font-normal leading-relaxed cursor-pointer"
               >
-                I understand and accept the cancellation policy
+                I understand and agree to the cancellation policy
               </Label>
             </div>
           </CardContent>
         </Card>
 
-        {/* Due Now Section */}
-        {hasDepositPolicy && (
-          <Card className="mb-6 border-2 border-primary">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground uppercase tracking-wide">
-                  Due Now
-                </p>
-                <p className="text-4xl font-bold text-primary">
-                  ${depositAmount.toFixed(2)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {selectedLocation?.deposit_percentage}% deposit required to confirm
-                </p>
-                <Separator className="my-4" />
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total at salon</span>
-                  <span className="font-medium">${balanceDue.toFixed(2)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Payment Button/Card */}
+        {/* Payment Method */}
         {hasDepositPolicy && (
           <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-base">Payment Method</CardTitle>
-              <CardDescription>
-                Add a payment method to secure your booking
-              </CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-base">Payment Method</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               {!paymentAdded ? (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setPaymentSheetOpen(true)}
-                >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Add Payment Card
-                </Button>
+                <>
+                  <Button
+                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
+                    onClick={() => setPaymentSheetOpen(true)}
+                  >
+                    + Add Payment Card
+                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="saveCard"
+                      checked={saveCard}
+                      onCheckedChange={(checked) => setSaveCard(checked as boolean)}
+                    />
+                    <Label
+                      htmlFor="saveCard"
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      Save card for future bookings
+                    </Label>
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-3">
@@ -391,20 +393,25 @@ export default function Confirmation() {
           </Card>
         )}
 
-        {/* Trust & Security */}
-        <div className="flex items-center justify-between px-4 py-3 bg-muted/50 rounded-lg mb-6">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm font-medium">Secure Payment</p>
-              <p className="text-xs text-muted-foreground">Your information is encrypted</p>
+        {/* Confirmation Details */}
+        <Card className="mb-6">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base">Confirmation Details</CardTitle>
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-primary text-primary" />
-            <span className="text-sm font-semibold">4.9</span>
-          </div>
-        </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Email confirmation:</span>
+              <span className="font-medium">{customer?.email}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">SMS reminders:</span>
+              <span className="font-medium">{customer?.phone}</span>
+            </div>
+          </CardContent>
+        </Card>
       </main>
 
       <BookingFooter
