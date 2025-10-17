@@ -1,23 +1,23 @@
-import { useNavigate } from 'react-router-dom';
-import { useBooking } from '@/context/BookingContext';
-import { bookingAPI } from '@/services/booking-api';
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { BookingHeader } from '@/components/layout/BookingHeader';
+import { BookingFooter } from '@/components/layout/BookingFooter';
+import { useBooking } from '@/context/BookingContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, Calendar, Clock, CreditCard, Phone, Mail, Shield, Star, Pencil } from 'lucide-react';
+import { Calendar, Clock, MapPin, Mail, Phone, Shield, Star, CreditCard, Lock } from 'lucide-react';
 import { format } from 'date-fns';
-import { BookingHeader } from '@/components/layout/BookingHeader';
-import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useToast } from '@/hooks/use-toast';
-import { PaymentSheet } from '@/components/booking/PaymentSheet';
-import { mockStaff } from '@/services/booking-api/mock-data';
-
+import { bookingAPI } from '@/services/booking-api';
 export default function Confirmation() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const {
     selectedLocation,
     cart,
@@ -25,33 +25,29 @@ export default function Confirmation() {
     selectedTime,
     customer,
     cartTotal,
-    depositAmount,
+    depositAmount
   } = useBooking();
-
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
-  const [paymentAdded, setPaymentAdded] = useState(false);
-  const [saveCard, setSaveCard] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState({
     cardNumber: '',
-    expiryDate: '',
+    expiry: '',
     cvv: '',
-    cardholderName: '',
+    cardholderName: ''
   });
-  const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
-
-  const hasDepositPolicy = selectedLocation?.has_deposit_policy || false;
+  const [paymentErrors, setPaymentErrors] = useState({
+    cardNumber: '',
+    expiry: '',
+    cvv: '',
+    cardholderName: ''
+  });
+  const hasDepositPolicy = selectedLocation?.has_deposit_policy;
   const balanceDue = cartTotal - depositAmount;
-
-  // Helper to get staff name
-  const getStaffName = (staffId?: string) => {
-    if (!staffId) return null;
-    const staff = mockStaff.find((s) => s.id === staffId);
-    return staff ? staff.first_name : null;
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\s/g, '');
+    const chunks = cleaned.match(/.{1,4}/g) || [];
+    return chunks.join(' ');
   };
-
-  // Validation functions
   const validateCardNumber = (value: string) => {
     const cleaned = value.replace(/\s/g, '');
     if (!cleaned) return 'Card number is required';
@@ -59,104 +55,88 @@ export default function Confirmation() {
     if (!/^\d+$/.test(cleaned)) return 'Card number must contain only digits';
     return '';
   };
-
-  const validateExpiryDate = (value: string) => {
+  const validateExpiry = (value: string) => {
     if (!value) return 'Expiry date is required';
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length !== 4) return 'Use MMYY format';
-    
-    const month = parseInt(cleaned.slice(0, 2));
-    const year = parseInt(cleaned.slice(2, 4));
+    const [month, year] = value.split('/').map(v => v.trim());
+    if (!month || !year) return 'Use MM/YY format';
+    const monthNum = parseInt(month);
+    const yearNum = parseInt(year);
     const currentYear = new Date().getFullYear() % 100;
     const currentMonth = new Date().getMonth() + 1;
-    
-    if (month > 12 || month < 1) return 'Invalid month';
-    if (year < currentYear) return 'Card is expired';
-    if (year === currentYear && month < currentMonth) return 'Card is expired';
+    if (monthNum > 12 || monthNum < 1) return 'Invalid month';
+    if (yearNum < currentYear) return 'Card is expired';
+    if (yearNum === currentYear && monthNum < currentMonth) return 'Card is expired';
     return '';
   };
-
   const validateCVV = (value: string) => {
     if (!value) return 'CVV is required';
     if (value.length < 3 || value.length > 4) return 'CVV must be 3 or 4 digits';
     if (!/^\d+$/.test(value)) return 'CVV must contain only digits';
     return '';
   };
-
   const validateCardholderName = (value: string) => {
     if (!value.trim()) return 'Cardholder name is required';
     if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name must contain only letters';
     return '';
   };
-
+  const handlePaymentInputChange = (field: string, value: string) => {
+    let formattedValue = value;
+    if (field === 'cardNumber') {
+      formattedValue = formatCardNumber(value.replace(/\D/g, '').slice(0, 16));
+    } else if (field === 'expiry') {
+      const cleaned = value.replace(/\D/g, '').slice(0, 4);
+      if (cleaned.length >= 2) {
+        formattedValue = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+      } else {
+        formattedValue = cleaned;
+      }
+    } else if (field === 'cvv') {
+      formattedValue = value.replace(/\D/g, '').slice(0, 4);
+    }
+    setPaymentDetails(prev => ({
+      ...prev,
+      [field]: formattedValue
+    }));
+    setPaymentErrors(prev => ({
+      ...prev,
+      [field]: ''
+    }));
+  };
   const validatePaymentForm = () => {
     if (!hasDepositPolicy) return true;
-
-    const errors: Record<string, string> = {
+    const errors = {
       cardNumber: validateCardNumber(paymentDetails.cardNumber),
-      expiryDate: validateExpiryDate(paymentDetails.expiryDate),
+      expiry: validateExpiry(paymentDetails.expiry),
       cvv: validateCVV(paymentDetails.cvv),
-      cardholderName: validateCardholderName(paymentDetails.cardholderName),
+      cardholderName: validateCardholderName(paymentDetails.cardholderName)
     };
-
     setPaymentErrors(errors);
     return !Object.values(errors).some(error => error !== '');
   };
-
-  const handlePaymentSheetConfirm = () => {
-    if (!validatePaymentForm()) {
-      return;
-    }
-    setPaymentAdded(true);
-    setPaymentSheetOpen(false);
-    toast({
-      title: 'Payment Method Added',
-      description: 'Your card has been securely saved.',
-    });
-  };
-
-  // Main booking handler
   const handleBookNow = async () => {
-    // 1. Check policy acceptance FIRST
     if (!policyAccepted) {
       toast({
         title: 'Policy Not Accepted',
         description: 'Please accept the cancellation policy to continue.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
       return;
     }
-
-    // 2. Check payment is added if deposit required
-    if (hasDepositPolicy && !paymentAdded) {
-      toast({
-        title: 'Payment Required',
-        description: 'Please add a payment card for the deposit.',
-        variant: 'destructive',
-      });
-      setPaymentSheetOpen(true);
-      return;
-    }
-
-    // 3. Validate payment form
-    if (hasDepositPolicy && !validatePaymentForm()) {
+    if (!validatePaymentForm()) {
       toast({
         title: 'Invalid Payment Details',
         description: 'Please check your payment information.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
       return;
     }
-
     setIsProcessing(true);
 
     // Mock payment processing delay (2 seconds)
     if (hasDepositPolicy) {
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
-
     try {
-      // [API INTEGRATION POINT]
       // Create booking via API
       const response = await bookingAPI.createBooking({
         customer: customer!,
@@ -165,51 +145,48 @@ export default function Confirmation() {
         selectedDate: selectedDate!,
         selectedTime: selectedTime!,
         cartTotal,
-        depositAmount,
+        depositAmount
       });
-
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to create booking');
       }
-
       toast({
         title: 'Booking Confirmed!',
-        description: `Your confirmation number is ${response.data.confirmation_number}`,
+        description: `Your confirmation number is ${response.data.confirmation_number}`
       });
-
       navigate('/success', {
         state: {
           confirmationNumber: response.data.confirmation_number,
-          bookingId: response.data.booking_id,
-        },
+          bookingId: response.data.booking_id
+        }
       });
     } catch (error: any) {
       console.error('Booking error:', error);
       toast({
         title: 'Booking Failed',
         description: error.message || 'Unable to create booking. Please try again.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setIsProcessing(false);
     }
   };
-
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
+  const isBookingDisabled = !policyAccepted || isProcessing;
+  return <div className="min-h-screen flex flex-col bg-background">
       <BookingHeader title="Confirm Booking" />
 
       <main className="flex-1 container max-w-2xl px-4 py-6 pb-24">
         {/* Booking Summary */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Booking Summary</h2>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/services')}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </div>
-
         <Card className="mb-6">
-          <CardContent className="pt-6 space-y-4">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Booking Summary</span>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/services')}>
+                Edit
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {/* Location */}
             <div className="flex items-start gap-3">
               <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -219,16 +196,7 @@ export default function Confirmation() {
               </div>
             </div>
 
-            <Separator />
-
             {/* Date & Time */}
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">Date & Time</span>
-              <Button variant="ghost" size="icon" onClick={() => navigate('/time')}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </div>
-
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground" />
               <p className="font-medium">
@@ -236,33 +204,37 @@ export default function Confirmation() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <p className="font-medium">{selectedTime}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <p className="font-medium">{selectedTime}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/time')}>
+                Edit
+              </Button>
             </div>
 
             <Separator />
 
-            {/* Services with Staff */}
-            {cart.map((item, index) => (
-              <div key={index} className="flex justify-between py-2">
-                <div>
-                  <p className="font-medium">{item.service.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.service.duration_minutes} min
-                    {item.staffId && ` • with ${getStaffName(item.staffId)}`}
-                  </p>
-                  {item.addOns.length > 0 && (
-                    <ul className="text-xs text-muted-foreground mt-1 ml-4">
-                      {item.addOns.map((addOn) => (
-                        <li key={addOn.id}>+ {addOn.name}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <p className="font-medium">${item.service.price_card.toFixed(2)}</p>
-              </div>
-            ))}
+            {/* Services */}
+            <div className="space-y-3">
+              {cart.map((item, index) => <div key={item.service.id} className="space-y-2">
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="font-medium">{item.service.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.service.duration_minutes} min
+                      </p>
+                    </div>
+                    <p className="font-medium">${item.service.price_card.toFixed(2)}</p>
+                  </div>
+                  {item.addOns.map(addOn => <div key={addOn.id} className="flex justify-between pl-4 text-sm">
+                      <p className="text-muted-foreground">+ {addOn.name}</p>
+                      <p>${(addOn.price_card - addOn.discount_when_bundled).toFixed(2)}</p>
+                    </div>)}
+                  {index < cart.length - 1 && <Separator className="mt-3" />}
+                </div>)}
+            </div>
 
             <Separator />
 
@@ -272,183 +244,148 @@ export default function Confirmation() {
                 <span>Total</span>
                 <span>${cartTotal.toFixed(2)}</span>
               </div>
+              {hasDepositPolicy && <>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Deposit Due Today ({selectedLocation.deposit_percentage}%)</span>
+                    <span>${depositAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Balance Due at Salon</span>
+                    <span>${balanceDue.toFixed(2)}</span>
+                  </div>
+                </>}
             </div>
           </CardContent>
         </Card>
 
-        {/* Contact Information */}
+        {/* Payment Details - Only show if deposit required */}
+        {hasDepositPolicy && <Card className="mb-6 border-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Payment Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Deposit Summary */}
+              <div className="bg-primary-light p-4 rounded-lg space-y-1">
+                <p className="text-sm text-muted-foreground">Deposit Due Today</p>
+                <p className="text-3xl font-bold text-primary">${depositAmount.toFixed(2)}</p>
+                <p className="text-sm text-muted-foreground">
+                  Balance at Salon: ${balanceDue.toFixed(2)}
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* Card Information */}
+              <div className="space-y-4">
+                
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="expiry">Expiry Date</Label>
+                    <Input id="expiry" placeholder="MM/YY" value={paymentDetails.expiry} onChange={e => handlePaymentInputChange('expiry', e.target.value)} className={paymentErrors.expiry ? 'border-destructive' : ''} maxLength={5} />
+                    {paymentErrors.expiry && <p className="text-sm text-destructive mt-1">{paymentErrors.expiry}</p>}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cvv">CVV</Label>
+                    <Input id="cvv" placeholder="123" type="password" value={paymentDetails.cvv} onChange={e => handlePaymentInputChange('cvv', e.target.value)} className={paymentErrors.cvv ? 'border-destructive' : ''} maxLength={4} />
+                    {paymentErrors.cvv && <p className="text-sm text-destructive mt-1">{paymentErrors.cvv}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="cardholderName">Cardholder Name</Label>
+                  <Input id="cardholderName" placeholder="John Doe" value={paymentDetails.cardholderName} onChange={e => handlePaymentInputChange('cardholderName', e.target.value)} className={paymentErrors.cardholderName ? 'border-destructive' : ''} />
+                  {paymentErrors.cardholderName && <p className="text-sm text-destructive mt-1">{paymentErrors.cardholderName}</p>}
+                </div>
+              </div>
+
+              {/* Security Message */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <Lock className="h-4 w-4" />
+                <span>Your payment information is secure and encrypted</span>
+              </div>
+            </CardContent>
+          </Card>}
+
+        {/* Customer Info */}
         <Card className="mb-6">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Contact Information</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => navigate('/client-info')}>
-                <Pencil className="h-4 w-4" />
+            <CardTitle className="flex items-center justify-between">
+              <span>Contact Information</span>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/info')}>
+                Edit
               </Button>
-            </div>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Phone</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{customer?.phone}</span>
+            {customer?.first_name && customer?.last_name && <div className="flex items-center gap-3">
+                <span className="font-medium">{customer.first_name} {customer.last_name}</span>
+              </div>}
+            <div className="flex items-center gap-3">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{customer?.email}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Email</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{customer?.email}</span>
+            <div className="flex items-center gap-3">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{customer?.phone}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Confirmation Details */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">Confirmation Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Email confirmation</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{customer?.email}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">SMS reminders</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{customer?.phone}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Cancellation Policy - MOVED BEFORE PAYMENT */}
+        {/* Cancellation Policy */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-base">Cancellation Policy</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
               {selectedLocation?.cancellation_policy}
             </p>
-            <div className="flex items-start space-x-2">
-              <Checkbox
-                id="policy"
-                checked={policyAccepted}
-                onCheckedChange={(checked) => setPolicyAccepted(checked as boolean)}
-              />
-              <Label
-                htmlFor="policy"
-                className="text-sm font-normal leading-relaxed cursor-pointer"
-              >
+            <div className="flex items-start gap-3">
+              <Checkbox id="policy" checked={policyAccepted} onCheckedChange={checked => setPolicyAccepted(checked as boolean)} />
+              <label htmlFor="policy" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 I understand and accept the cancellation policy
-              </Label>
+              </label>
             </div>
           </CardContent>
         </Card>
 
-        {/* Due Now Section */}
-        {hasDepositPolicy && (
-          <Card className="mb-6 border-2 border-primary">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground uppercase tracking-wide">
-                  Due Now
-                </p>
-                <p className="text-4xl font-bold text-primary">
-                  ${depositAmount.toFixed(2)}
+        {/* Payment Information */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Payment Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hasDepositPolicy ? <div className="space-y-2">
+                <p className="text-sm">
+                  A deposit of <span className="font-semibold">${depositAmount.toFixed(2)}</span> will be required to confirm your booking.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {selectedLocation?.deposit_percentage}% deposit required to confirm
+                  Please bring your card to check in. The remaining balance of ${balanceDue.toFixed(2)} will be collected at the salon.
                 </p>
-                <Separator className="my-4" />
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total at salon</span>
-                  <span className="font-medium">${balanceDue.toFixed(2)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </div> : <p className="text-sm text-muted-foreground">
+                Payment of ${cartTotal.toFixed(2)} will be collected at the salon.
+              </p>}
+          </CardContent>
+        </Card>
 
-        {/* Payment Button/Card */}
-        {hasDepositPolicy && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-base">Payment Method</CardTitle>
-              <CardDescription>
-                Add a payment method to secure your booking
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!paymentAdded ? (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setPaymentSheetOpen(true)}
-                >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Add Payment Card
-                </Button>
-              ) : (
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">•••• {paymentDetails.cardNumber.slice(-4)}</p>
-                      <p className="text-xs text-muted-foreground">{paymentDetails.cardholderName}</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => setPaymentSheetOpen(true)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Trust & Security */}
-        <div className="flex items-center justify-between px-4 py-3 bg-muted/50 rounded-lg mb-6">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm font-medium">Secure Payment</p>
-              <p className="text-xs text-muted-foreground">Your information is encrypted</p>
-            </div>
+        {/* Trust Signals */}
+        <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground mb-6">
+          <div className="flex items-center gap-1">
+            <Shield className="h-4 w-4" />
+            <span>Secure Payment</span>
           </div>
           <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-primary text-primary" />
-            <span className="text-sm font-semibold">4.9</span>
+            <Star className="h-4 w-4 fill-current" />
+            <span>4.9 Rating</span>
           </div>
         </div>
       </main>
 
-      <BookingFooter
-        onBack={() => navigate(-1)}
-        onNext={handleBookNow}
-        nextLabel={hasDepositPolicy ? `Confirm & Pay $${depositAmount.toFixed(2)}` : 'Confirm Booking'}
-        nextDisabled={!policyAccepted || isProcessing}
-      />
-
-      {/* Payment Sheet */}
-      <PaymentSheet
-        open={paymentSheetOpen}
-        onOpenChange={setPaymentSheetOpen}
-        depositAmount={depositAmount}
-        paymentDetails={paymentDetails}
-        paymentErrors={paymentErrors}
-        saveCard={saveCard}
-        onPaymentDetailsChange={setPaymentDetails}
-        onPaymentErrorsChange={setPaymentErrors}
-        onSaveCardChange={setSaveCard}
-        onConfirm={handlePaymentSheetConfirm}
-      />
-    </div>
-  );
+      <BookingFooter onNext={handleBookNow} nextLabel={isProcessing ? 'Processing...' : 'Book Now'} nextDisabled={isBookingDisabled} />
+    </div>;
 }
