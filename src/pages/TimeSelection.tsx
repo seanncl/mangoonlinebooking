@@ -236,11 +236,9 @@ export default function TimeSelection() {
   };
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
-  };
-  const handleNext = () => {
+    // Automatically navigate to next page after selecting time
     navigate('/info');
   };
-  const isNextDisabled = !selectedDate || !selectedTime;
   return <TooltipProvider>
     <div className="min-h-screen flex flex-col bg-background">
       <BookingHeader title="Select Date & Time" />
@@ -480,7 +478,7 @@ export default function TimeSelection() {
           </div>}
       </main>
 
-      <BookingFooter onNext={handleNext} nextLabel="Continue" nextDisabled={isNextDisabled} />
+      <BookingFooter hideNext />
       
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </div>
