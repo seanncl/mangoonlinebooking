@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Clock, Users, Sparkles, AlertCircle, GripVertical, Phone, Calendar as CalendarIcon } from 'lucide-react';
+import { Clock, Users, Sparkles, AlertCircle, GripVertical, Phone, Calendar as CalendarIcon, ShoppingBag } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { bookingAPI } from '@/services/booking-api';
 import { Button } from '@/components/ui/button';
@@ -245,22 +245,25 @@ export default function TimeSelection() {
 
       <main className="flex-1 container px-4 py-6 pb-24 max-w-4xl">
         {/* Compact Booking Summary */}
-        <div className="flex flex-wrap items-center gap-3 p-3 mb-4 bg-muted/50 rounded-lg text-sm">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{totalDuration} min</span>
-          </div>
-          {hasMultipleStaff && (
+        <div className="flex items-center justify-between gap-3 p-3 mb-4 bg-muted/50 rounded-lg text-sm">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{staffCount} staff</span>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{totalDuration} min</span>
             </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {cart.length} {cart.length === 1 ? 'service' : 'services'}
-            </Badge>
+            {hasMultipleStaff && (
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{staffCount} staff</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {cart.length} {cart.length === 1 ? 'service' : 'services'}
+              </Badge>
+            </div>
           </div>
+          <ShoppingBag className="h-5 w-5 text-muted-foreground flex-shrink-0" />
         </div>
 
         {/* Start Same Time Toggle (for multiple staff) */}
