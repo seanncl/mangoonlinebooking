@@ -199,14 +199,14 @@ export default function StaffSelection() {
           {/* Staff Selection Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-lg font-bold mb-1">Choose Your Staff Member</h1>
-                <p className="text-xs text-muted-foreground">
-                  {multiSelectMode && bookingFlowType === 'staff-first' 
-                    ? 'Select multiple staff members for your services' 
-                    : 'Choose who you\'d like to perform your service'}
-                </p>
-              </div>
+            <div>
+              <h1 className="text-lg font-bold mb-1">Choose Your Staff</h1>
+              <p className="text-xs text-muted-foreground">
+                {multiSelectMode && bookingFlowType === 'staff-first' 
+                  ? 'Select multiple staff for your services' 
+                  : 'Choose who you\'d like to perform your service'}
+              </p>
+            </div>
               {bookingFlowType === 'staff-first' && (
                 <Button
                   variant={multiSelectMode ? "default" : "outline"}
@@ -245,7 +245,7 @@ export default function StaffSelection() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-base">Choose Multiple Staff</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      Select a different staff member for each service
+                      Select a different staff for each service
                     </p>
                   </div>
                 </div>
@@ -265,7 +265,7 @@ export default function StaffSelection() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-base">No Preference</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      First available staff member
+                      First available staff
                     </p>
                   </div>
                 </div>
@@ -372,7 +372,7 @@ export default function StaffSelection() {
       <BookingFooter 
         hideNext={!multiSelectMode || bookingFlowType !== 'staff-first'}
         onNext={handleContinueMultiSelect}
-        nextLabel={`Continue with ${selectedStaffIds.length} Staff Member${selectedStaffIds.length !== 1 ? 's' : ''}`}
+        nextLabel={`Continue with ${selectedStaffIds.length} Staff${selectedStaffIds.length !== 1 ? '' : ''}`}
         nextDisabled={selectedStaffIds.length === 0}
       />
       
