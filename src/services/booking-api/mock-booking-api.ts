@@ -150,12 +150,20 @@ export class MockBookingAPI implements IBookingAPI {
       console.log('Mock API - Removal rate:', removalRate);
       console.log('Mock API - Total slots before filtering:', allSlots.length);
       
-      // Use date as seed for consistent results per date
-      const dateSeed = date.getTime();
+      // Use a simple deterministic filter based on slot index and date
+      const dateHash = params.date.split('-').reduce((acc, part) => acc + parseInt(part), 0);
+      
       const availableSlots = allSlots.filter((slot, index) => {
-        // Create pseudo-random but consistent removal based on date + index
-        const slotSeed = (dateSeed + index * 1000) % 100;
-        return slotSeed > (removalRate * 100);
+        // Create a deterministic value between 0-9 for each slot
+        const slotValue = (dateHash + index * 7) % 10;
+        
+        // Weekends: keep slots where value >= 4 (60% availability)
+        // Weekdays: keep slots where value >= 2 (80% availability)
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          return slotValue >= 4;
+        } else {
+          return slotValue >= 2;
+        }
       });
       
       console.log('Mock API - Available slots after filtering:', availableSlots.length);
