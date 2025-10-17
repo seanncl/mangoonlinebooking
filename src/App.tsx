@@ -12,7 +12,6 @@ import StaffSelection from "./pages/StaffSelection";
 import StaffAssignment from "./pages/StaffAssignment";
 import TimeSelection from "./pages/TimeSelection";
 import ClientInfo from "./pages/ClientInfo";
-import PhoneVerification from "./pages/PhoneVerification";
 import Confirmation from "./pages/Confirmation";
 import BookingSuccess from "./pages/BookingSuccess";
 import Login from "./pages/Login";
@@ -38,7 +37,6 @@ const App = () => (
               <Route path="/staff-assignment" element={<StaffAssignment />} />
               <Route path="/time" element={<TimeSelection />} />
               <Route path="/info" element={<ClientInfo />} />
-              <Route path="/verify" element={<PhoneVerification />} />
               <Route path="/confirm" element={<Confirmation />} />
               <Route path="/success" element={<BookingSuccess />} />
               <Route path="/login" element={<Login />} />

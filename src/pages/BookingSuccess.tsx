@@ -370,6 +370,34 @@ Total: $${cartTotal.toFixed(2)}
           </ul>
         </Card>
 
+        {/* Guest Account Creation Prompt */}
+        {customer?.is_guest && (
+          <Card className="p-6 mb-6 bg-accent/50 border-accent">
+            <div className="text-center space-y-3">
+              <h3 className="font-semibold text-lg">Save Your Bookings</h3>
+              <p className="text-sm text-muted-foreground">
+                Create an account to easily rebook, manage appointments, and save your preferences
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => {
+                    toast({
+                      title: 'Account Created (Mock)',
+                      description: 'In production, this would create your account and link existing bookings',
+                    });
+                  }}
+                  className="flex-1"
+                >
+                  Create Account
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  Maybe Later
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Manage Booking */}
         <div className="space-y-3">
           <Button variant="outline" className="w-full gap-2">

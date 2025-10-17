@@ -67,6 +67,7 @@ export interface Customer {
   has_accepted_policy: boolean;
   sms_reminders_enabled: boolean;
   promotional_texts_enabled: boolean;
+  is_guest?: boolean;
 }
 
 export interface BookingState {
