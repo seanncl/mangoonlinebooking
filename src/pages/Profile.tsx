@@ -29,10 +29,10 @@ const Profile = () => {
     
     if (user) {
       setFormData({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
       });
     }
   }, [user, isAuthenticated, navigate]);
@@ -171,10 +171,10 @@ const Profile = () => {
                   setIsEditing(false);
                   if (user) {
                     setFormData({
-                      firstName: user.firstName,
-                      lastName: user.lastName,
-                      email: user.email,
-                      phone: user.phone,
+                      firstName: user.firstName || '',
+                      lastName: user.lastName || '',
+                      email: user.email || '',
+                      phone: user.phone || '',
                     });
                   }
                 }}

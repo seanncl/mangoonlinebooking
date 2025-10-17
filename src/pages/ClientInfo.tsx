@@ -19,7 +19,7 @@ type FlowStep = 'initial' | 'otp-verify' | 'collect-info';
 export default function ClientInfo() {
   const navigate = useNavigate();
   const { setCustomer, customer } = useBooking();
-  const { user } = useAuth();
+  const { user, loginWithPhone } = useAuth();
   const { toast } = useToast();
 
   // Flow state
@@ -39,10 +39,10 @@ export default function ClientInfo() {
   // Pre-fill form if user is logged in
   useEffect(() => {
     if (user && !customer?.first_name) {
-      setFirstName(user.firstName);
-      setLastName(user.lastName);
-      setEmail(user.email);
-      setPhone(user.phone);
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
     }
   }, [user, customer]);
 
@@ -193,11 +193,22 @@ export default function ClientInfo() {
 
     if (customerExists && autoFilledData) {
       // Existing customer - auto-fill and continue
+      const cleanPhone = phone.replace(/\D/g, '');
+      
       setCustomer({
         ...autoFilledData,
         has_accepted_policy: false,
         sms_reminders_enabled: true,
         promotional_texts_enabled: false,
+      });
+
+      // Authenticate user in AuthContext
+      await loginWithPhone(cleanPhone, {
+        id: autoFilledData.id,
+        firstName: autoFilledData.first_name,
+        lastName: autoFilledData.last_name,
+        email: autoFilledData.email,
+        phone: cleanPhone
       });
 
       toast({
@@ -217,7 +228,7 @@ export default function ClientInfo() {
   };
 
   // Collect additional info for new customers
-  const handleCollectInfo = (isGuest: boolean = false) => {
+  const handleCollectInfo = async () => {
     if (!firstName || !lastName || !email) {
       toast({
         title: 'Missing Information',
@@ -240,30 +251,50 @@ export default function ClientInfo() {
 
     const cleanPhone = phone.replace(/\D/g, '');
 
-    // [API INTEGRATION POINT]
-    // POST /api/customers
-    // Body: { first_name, last_name, email, phone, create_account: boolean }
-    // Response: { customer_id: string, auth_user_id?: string }
+    setIsLoading(true);
 
-    setCustomer({
-      first_name: firstName,
-      last_name: lastName,
-      email,
-      phone: cleanPhone,
-      has_accepted_policy: false,
-      sms_reminders_enabled: true,
-      promotional_texts_enabled: false,
-      is_guest: isGuest,
-    });
+    try {
+      // [API INTEGRATION POINT]
+      // POST /api/customers
+      // Body: { first_name, last_name, email, phone }
+      // Response: { customer_id: string, auth_user_id?: string }
 
-    toast({
-      title: isGuest ? 'Guest Checkout' : 'Account Created (Mock)',
-      description: isGuest 
-        ? 'Proceeding as guest' 
-        : 'In production, this would create/link your account',
-    });
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    navigate('/confirm');
+      setCustomer({
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone: cleanPhone,
+        has_accepted_policy: false,
+        sms_reminders_enabled: true,
+        promotional_texts_enabled: false,
+      });
+
+      // Authenticate user in AuthContext
+      await loginWithPhone(cleanPhone, {
+        firstName,
+        lastName,
+        email,
+        phone: cleanPhone
+      });
+
+      toast({
+        title: 'Account Created',
+        description: 'Your information has been saved',
+      });
+
+      navigate('/confirm');
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create account. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResendCode = () => {
@@ -514,7 +545,7 @@ export default function ClientInfo() {
                 </div>
 
                 <Button
-                  onClick={() => handleCollectInfo(false)}
+                  onClick={handleCollectInfo}
                   disabled={isLoading}
                   className="w-full"
                   size="lg"

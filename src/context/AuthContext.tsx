@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
   id: string;
-  email: string;
+  email?: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -12,6 +12,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithPhone: (phone: string, customerData: Partial<User>) => Promise<void>;
   signup: (userData: Omit<User, 'id'> & { password: string }) => Promise<void>;
   logout: () => void;
   updateProfile: (userData: Partial<Omit<User, 'id'>>) => Promise<void>;
@@ -46,6 +47,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       firstName: email.split('@')[0],
       lastName: 'User',
       phone: ''
+    };
+    
+    setUser(mockUser);
+    localStorage.setItem('mockUser', JSON.stringify(mockUser));
+  };
+
+  const loginWithPhone = async (phone: string, customerData: Partial<User>) => {
+    // TODO: Replace with actual POS API authentication call
+    // Example: const response = await fetch('/api/auth/login-phone', { method: 'POST', body: JSON.stringify({ phone }) });
+    
+    // Create authenticated user from phone verification
+    const mockUser: User = {
+      id: customerData.id || 'mock-user-' + Date.now(),
+      phone,
+      firstName: customerData.firstName || '',
+      lastName: customerData.lastName || '',
+      email: customerData.email
     };
     
     setUser(mockUser);
@@ -92,6 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user,
         isAuthenticated: !!user,
         login,
+        loginWithPhone,
         signup,
         logout,
         updateProfile
