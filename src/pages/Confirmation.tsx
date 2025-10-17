@@ -227,13 +227,8 @@ export default function Confirmation() {
                 <div key={index} className="flex justify-between items-start mb-3">
                   <div>
                     <p className="font-medium">{item.service.name}</p>
-                    {item.staffId && (
-                      <p className="text-sm text-muted-foreground">
-                        with {getStaffName(item.staffId)}
-                      </p>
-                    )}
                     <p className="text-sm text-muted-foreground">
-                      {item.service.duration_minutes} min
+                      {item.staffId ? `with ${getStaffName(item.staffId)} • ` : ''}{item.service.duration_minutes} min
                     </p>
                   </div>
                   <p className="font-semibold">${item.service.price_card.toFixed(2)}</p>
