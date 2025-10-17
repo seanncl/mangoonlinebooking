@@ -5,6 +5,22 @@ export interface BookingConfig {
     requireStaffSelection: boolean;
     allowStaffAutoAssignment: boolean;
   };
+  multipleServices: {
+    allowMultipleServices: boolean;
+    requireSameStaff: boolean;
+    serviceExecutionOrder: 'sequential' | 'parallel';
+  };
+  customerInfo: {
+    collectionTiming: 'start' | 'after_services' | 'confirmation';
+    requiredFields: {
+      firstName: boolean;
+      lastName: boolean;
+      phone: boolean;
+      email: boolean;
+      birthday: boolean;
+      notes: boolean;
+    };
+  };
   deposits: {
     requireDeposit: boolean;
     depositType: 'percentage' | 'fixed';
@@ -35,11 +51,31 @@ export interface BookingConfig {
     sendReminders: boolean;
     reminderHoursBefore: number;
     sendFollowUp: boolean;
+    deliveryMethods: {
+      sms: boolean;
+      email: boolean;
+      push: boolean;
+    };
   };
   availability: {
     bookingLeadTimeHours: number;
     maxAdvanceBookingDays: number;
     bufferBetweenAppointmentsMinutes: number;
+  };
+  rescheduling: {
+    allowRescheduling: boolean;
+    rescheduleDeadlineHours: number;
+    maxReschedules: number;
+  };
+  noShow: {
+    chargeNoShowFee: boolean;
+    noShowFeeType: 'fixed' | 'percentage';
+    noShowFeeAmount: number;
+  };
+  waitingList: {
+    enableWaitingList: boolean;
+    autoNotifyWhenAvailable: boolean;
+    maxWaitingListSize: number;
   };
   policies: {
     termsAndConditions: string;
@@ -54,6 +90,22 @@ export const mockBookingConfig: BookingConfig = {
     enableFlowTypeSelection: true,
     requireStaffSelection: false,
     allowStaffAutoAssignment: true,
+  },
+  multipleServices: {
+    allowMultipleServices: true,
+    requireSameStaff: false,
+    serviceExecutionOrder: 'sequential',
+  },
+  customerInfo: {
+    collectionTiming: 'start',
+    requiredFields: {
+      firstName: true,
+      lastName: true,
+      phone: true,
+      email: true,
+      birthday: false,
+      notes: false,
+    },
   },
   deposits: {
     requireDeposit: false,
@@ -85,11 +137,31 @@ export const mockBookingConfig: BookingConfig = {
     sendReminders: true,
     reminderHoursBefore: 24,
     sendFollowUp: false,
+    deliveryMethods: {
+      sms: false,
+      email: true,
+      push: false,
+    },
   },
   availability: {
     bookingLeadTimeHours: 2,
     maxAdvanceBookingDays: 30,
     bufferBetweenAppointmentsMinutes: 15,
+  },
+  rescheduling: {
+    allowRescheduling: true,
+    rescheduleDeadlineHours: 24,
+    maxReschedules: 2,
+  },
+  noShow: {
+    chargeNoShowFee: false,
+    noShowFeeType: 'fixed',
+    noShowFeeAmount: 25,
+  },
+  waitingList: {
+    enableWaitingList: true,
+    autoNotifyWhenAvailable: true,
+    maxWaitingListSize: 10,
   },
   policies: {
     termsAndConditions: 'By booking an appointment, you agree to our terms and conditions.',
