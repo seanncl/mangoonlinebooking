@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { LogOut } from 'lucide-react';
+import { LogOut, Shield } from 'lucide-react';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, logout, updateProfile, isAuthenticated } = useAuth();
+  const { user, logout, updateProfile, isAuthenticated, isAdmin } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -190,6 +191,28 @@ const Profile = () => {
             >
               Edit Profile
             </Button>
+          )}
+
+          {isAdmin && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Admin Tools
+                </CardTitle>
+                <CardDescription>
+                  Manage your salon's booking configuration
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => navigate('/admin')} 
+                  className="w-full"
+                >
+                  Go to Admin Dashboard
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           <div className="pt-4 border-t">
