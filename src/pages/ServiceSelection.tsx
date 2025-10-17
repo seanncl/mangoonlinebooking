@@ -172,167 +172,252 @@ export default function ServiceSelection() {
       <BookingHeader />
 
       <main className="flex-1 pb-24">
-        {/* Sticky Category & Search Section */}
-        <div className="sticky top-12 z-40 bg-background border-b pb-4">
-          <div className="container max-w-6xl mx-auto px-4 pt-4">
-            {/* Category Filters */}
-            <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-              {(Object.keys(categoryConfig) as ServiceCategory[]).map((category) => {
-                const config = categoryConfig[category];
-                const isSelected = selectedCategory === category;
-                return (
+        <div className="container max-w-7xl mx-auto px-4 py-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            
+            {/* Left Sidebar - Categories (Desktop) */}
+            <aside className="hidden lg:block lg:w-64 flex-shrink-0">
+              <div className="sticky top-20 space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-3">
+                    CATEGORIES
+                  </h3>
+                  
+                  {/* All Services Option */}
                   <Button
-                    key={category}
-                    variant={isSelected ? 'default' : 'outline'}
-                    onClick={() => setSelectedCategory(isSelected ? null : category)}
+                    variant="ghost"
+                    onClick={() => setSelectedCategory(null)}
                     className={cn(
-                      "flex-shrink-0 flex-col gap-1 rounded-2xl px-4 py-2 h-auto min-w-[80px]",
-                      isSelected && "bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500"
+                      "w-full justify-start h-12 px-3 transition-all",
+                      !selectedCategory 
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                        : "hover:bg-accent"
                     )}
                   >
-                    {config.icon}
-                    <span className="text-xs">{config.label}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-lg bg-background/10 flex items-center justify-center">
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+                      <span className="font-medium">All Services</span>
+                    </div>
                   </Button>
-                );
-              })}
-            </div>
-
-            {/* Search Bar with Cart */}
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search for services..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-12 rounded-xl"
-                />
-              </div>
-              <div className="flex-shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 relative h-11 w-11 p-0"
-                  onClick={() => setCartOpen(true)}
-                >
-                  <ShoppingBag className="h-5 w-5" />
-                  {cartCount > 0 && (
-                    <Badge 
-                      variant="default" 
-                      className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full"
-                    >
-                      {cartCount}
-                    </Badge>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="container max-w-6xl mx-auto px-4 py-6">
-
-          {/* Services List */}
-          {Object.entries(groupedServices).map(([category, categoryServices]) => (
-            <div key={category} className="mb-8">
-              <h2 className="text-xl font-bold mb-4 capitalize">
-                {categoryConfig[category as ServiceCategory]?.label || category.replace('_', ' ')}
-              </h2>
-              <div className="space-y-3">
-                {categoryServices.map((service) => {
-                  const isInCart = isServiceInCart(service.id);
-                  const isExpanded = expandedServices.has(service.id);
-                  const hasAddOns = addOnServices.some(addOn => 
-                    !addOn.parent_service_id || addOn.parent_service_id === service.id
-                  );
                   
+                  {/* Category Options */}
+                  {(Object.keys(categoryConfig) as ServiceCategory[]).map((category) => {
+                    const config = categoryConfig[category];
+                    const isSelected = selectedCategory === category;
+                    const categoryCount = mainServices.filter(s => s.category === category).length;
+                    
+                    return (
+                      <Button
+                        key={category}
+                        variant="ghost"
+                        onClick={() => setSelectedCategory(isSelected ? null : category)}
+                        className={cn(
+                          "w-full justify-start h-12 px-3 transition-all",
+                          isSelected 
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                            : "hover:bg-accent"
+                        )}
+                      >
+                        <div className="flex items-center justify-between w-full gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "h-9 w-9 rounded-lg flex items-center justify-center transition-colors",
+                              isSelected ? "bg-background/10" : "bg-muted"
+                            )}>
+                              {config.icon}
+                            </div>
+                            <span className="font-medium">{config.label}</span>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {categoryCount}
+                          </Badge>
+                        </div>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
+
+            {/* Mobile Categories - Horizontal Scroll */}
+            <div className="lg:hidden sticky top-12 z-40 bg-background -mx-4 px-4 pb-4 border-b">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <Button
+                  variant={!selectedCategory ? 'default' : 'outline'}
+                  onClick={() => setSelectedCategory(null)}
+                  className={cn(
+                    "flex-shrink-0 flex-col gap-1 rounded-2xl px-4 py-2 h-auto min-w-[80px]",
+                    !selectedCategory && "bg-primary hover:bg-primary/90"
+                  )}
+                >
+                  <Sparkles className="h-5 w-5" />
+                  <span className="text-xs">All</span>
+                </Button>
+                
+                {(Object.keys(categoryConfig) as ServiceCategory[]).map((category) => {
+                  const config = categoryConfig[category];
+                  const isSelected = selectedCategory === category;
                   return (
-                    <Card
-                      key={service.id}
+                    <Button
+                      key={category}
+                      variant={isSelected ? 'default' : 'outline'}
+                      onClick={() => setSelectedCategory(isSelected ? null : category)}
                       className={cn(
-                        "p-4 transition-all duration-200",
-                        isInCart 
-                          ? "border-cyan-500 bg-cyan-50/50 shadow-sm" 
-                          : "border-border hover:shadow-sm"
+                        "flex-shrink-0 flex-col gap-1 rounded-2xl px-4 py-2 h-auto min-w-[80px]",
+                        isSelected && "bg-primary hover:bg-primary/90"
                       )}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-2">
-                          {/* Service Name Row - Clickable for description toggle */}
-                          <div 
-                            className="flex items-center gap-2 cursor-pointer group"
-                            onClick={() => toggleDescription(service.id)}
-                          >
-                            <h4 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
-                              {service.name}
-                            </h4>
-                            {hasAddOns && (
-                              <Badge variant="secondary" className="text-[0.65rem] bg-gray-50 text-gray-400 border-gray-200 opacity-60">
-                                Add On
-                              </Badge>
-                            )}
-                            {service.description && (
-                              <ChevronDown 
-                                className={cn(
-                                  "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                                  isExpanded && "rotate-180"
-                                )}
-                              />
-                            )}
-                          </div>
-
-                          {/* Inline Price Display */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="font-bold text-foreground">💵 ${service.price_cash.toFixed(2)}</span>
-                      <span className="text-muted-foreground">•</span>
-                      <span className="font-bold text-foreground">💳 ${service.price_card.toFixed(2)}</span>
-                      <span className="text-[0.7rem] text-muted-foreground ml-1">⏱️ {service.duration_minutes}min</span>
-                    </div>
-
-                          {/* Collapsible Description */}
-                          {isExpanded && service.description && (
-                            <div className="text-sm text-gray-600 pt-2 animate-accordion-down">
-                              {service.description}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action Button */}
-                        <div className="flex-shrink-0">
-                          {isInCart ? (
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              onClick={() => handleRemoveService(service.id)}
-                              className="h-12 w-12 rounded-full bg-red-500 hover:bg-red-600"
-                            >
-                              <X className="h-5 w-5" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="default"
-                              size="icon"
-                              onClick={() => handleAddService(service)}
-                              className="h-12 w-12 rounded-full bg-cyan-500 hover:bg-cyan-600"
-                            >
-                              <Plus className="h-5 w-5" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
+                      {config.icon}
+                      <span className="text-xs">{config.label}</span>
+                    </Button>
                   );
                 })}
               </div>
             </div>
-          ))}
 
-          {filteredServices.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No services found matching your search.</p>
+            {/* Right Content - Search & Services */}
+            <div className="flex-1 min-w-0 space-y-6">
+              
+              {/* Search Bar with Cart */}
+              <div className="sticky top-12 lg:top-20 z-30 bg-background py-2 -mt-2">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Search for services..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 h-12 rounded-xl"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 relative h-12 w-12 p-0"
+                    onClick={() => setCartOpen(true)}
+                  >
+                    <ShoppingBag className="h-5 w-5" />
+                    {cartCount > 0 && (
+                      <Badge 
+                        variant="default" 
+                        className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full"
+                      >
+                        {cartCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Services Grid */}
+              {Object.entries(groupedServices).map(([category, categoryServices]) => (
+                <div key={category} className="animate-fade-in">
+                  <h2 className="text-2xl font-bold mb-5 capitalize">
+                    {categoryConfig[category as ServiceCategory]?.label || category.replace('_', ' ')}
+                  </h2>
+                  
+                  {/* Desktop Grid (2 columns) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                    {categoryServices.map((service) => {
+                      const isInCart = isServiceInCart(service.id);
+                      const isExpanded = expandedServices.has(service.id);
+                      const hasAddOns = addOnServices.some(addOn => 
+                        !addOn.parent_service_id || addOn.parent_service_id === service.id
+                      );
+                      
+                      return (
+                        <Card
+                          key={service.id}
+                          className={cn(
+                            "p-4 transition-all duration-200 hover-scale",
+                            isInCart 
+                              ? "border-primary bg-primary/5 shadow-sm" 
+                              : "border-border hover:shadow-md hover:border-primary/50"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 space-y-2 min-w-0">
+                              {/* Service Name Row */}
+                              <div 
+                                className="flex items-center gap-2 cursor-pointer group"
+                                onClick={() => toggleDescription(service.id)}
+                              >
+                                <h4 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors truncate">
+                                  {service.name}
+                                </h4>
+                                {hasAddOns && (
+                                  <Badge variant="secondary" className="text-[0.65rem] flex-shrink-0">
+                                    Add On
+                                  </Badge>
+                                )}
+                                {service.description && (
+                                  <ChevronDown 
+                                    className={cn(
+                                      "h-4 w-4 text-muted-foreground transition-transform duration-200 flex-shrink-0",
+                                      isExpanded && "rotate-180"
+                                    )}
+                                  />
+                                )}
+                              </div>
+
+                              {/* Price & Duration */}
+                              <div className="flex items-center gap-2 text-xs flex-wrap">
+                                <span className="font-bold text-foreground">💵 ${service.price_cash.toFixed(2)}</span>
+                                <span className="text-muted-foreground">•</span>
+                                <span className="font-bold text-foreground">💳 ${service.price_card.toFixed(2)}</span>
+                                <span className="text-[0.7rem] text-muted-foreground">⏱️ {service.duration_minutes}min</span>
+                              </div>
+
+                              {/* Collapsible Description */}
+                              {isExpanded && service.description && (
+                                <div className="text-sm text-muted-foreground pt-2 animate-accordion-down">
+                                  {service.description}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action Button */}
+                            <div className="flex-shrink-0">
+                              {isInCart ? (
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  onClick={() => handleRemoveService(service.id)}
+                                  className="h-11 w-11 rounded-full"
+                                >
+                                  <X className="h-5 w-5" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="default"
+                                  size="icon"
+                                  onClick={() => handleAddService(service)}
+                                  className="h-11 w-11 rounded-full"
+                                >
+                                  <Plus className="h-5 w-5" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {filteredServices.length === 0 && (
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-4">🔍</div>
+                  <p className="text-lg font-medium mb-2">No services found</p>
+                  <p className="text-sm text-muted-foreground">Try adjusting your search or category filter</p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </main>
 
