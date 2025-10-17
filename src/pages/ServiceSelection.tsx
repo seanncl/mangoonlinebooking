@@ -172,10 +172,10 @@ export default function ServiceSelection() {
       <BookingHeader />
 
       <main className="flex-1 pb-24">
-        {/* Sticky Category & Search Section */}
-        <div className="sticky top-12 z-40 bg-background border-b pb-4">
-          <div className="container max-w-6xl mx-auto px-4 pt-4">
-            {/* Category Filters */}
+        {/* Search Bar - Mobile and Desktop */}
+        <div className="sticky top-12 z-40 bg-background border-b pb-4 lg:hidden">
+          <div className="container max-w-7xl mx-auto px-4 pt-4">
+            {/* Category Filters - Mobile Only */}
             <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
               {(Object.keys(categoryConfig) as ServiceCategory[]).map((category) => {
                 const config = categoryConfig[category];
@@ -231,108 +231,177 @@ export default function ServiceSelection() {
           </div>
         </div>
 
-        <div className="container max-w-6xl mx-auto px-4 py-6">
+        <div className="container max-w-7xl mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+          {/* Desktop Sidebar */}
+          <aside className="hidden lg:block lg:w-64 flex-shrink-0">
+            <div className="sticky top-16 space-y-6">
+              {/* Search Bar - Desktop */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search services..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-12 rounded-xl"
+                />
+              </div>
 
-          {/* Services List */}
-          {Object.entries(groupedServices).map(([category, categoryServices]) => (
-            <div key={category} className="mb-8">
-              <h2 className="text-xl font-bold mb-4 capitalize">
-                {categoryConfig[category as ServiceCategory]?.label || category.replace('_', ' ')}
-              </h2>
-              <div className="space-y-3">
-                {categoryServices.map((service) => {
-                  const isInCart = isServiceInCart(service.id);
-                  const isExpanded = expandedServices.has(service.id);
-                  const hasAddOns = addOnServices.some(addOn => 
-                    !addOn.parent_service_id || addOn.parent_service_id === service.id
-                  );
-                  
-                  return (
-                    <Card
-                      key={service.id}
-                      className={cn(
-                        "p-4 transition-all duration-200",
-                        isInCart 
-                          ? "border-cyan-500 bg-cyan-50/50 shadow-sm" 
-                          : "border-border hover:shadow-sm"
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-2">
-                          {/* Service Name Row - Clickable for description toggle */}
-                          <div 
-                            className="flex items-center gap-2 cursor-pointer group"
-                            onClick={() => toggleDescription(service.id)}
-                          >
-                            <h4 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
-                              {service.name}
-                            </h4>
-                            {hasAddOns && (
-                              <Badge variant="secondary" className="text-[0.65rem] bg-gray-50 text-gray-400 border-gray-200 opacity-60">
-                                Add On
-                              </Badge>
-                            )}
+              {/* Cart Button - Desktop */}
+              <Button
+                variant="outline"
+                className="w-full gap-2 relative h-12"
+                onClick={() => setCartOpen(true)}
+              >
+                <ShoppingBag className="h-5 w-5" />
+                <span>View Cart</span>
+                {cartCount > 0 && (
+                  <Badge 
+                    variant="default" 
+                    className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full"
+                  >
+                    {cartCount}
+                  </Badge>
+                )}
+              </Button>
+
+              {/* Category Filters - Desktop Sidebar */}
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide px-2">
+                  Categories
+                </h3>
+                <div className="space-y-1">
+                  {(Object.keys(categoryConfig) as ServiceCategory[]).map((category) => {
+                    const config = categoryConfig[category];
+                    const isSelected = selectedCategory === category;
+                    return (
+                      <Button
+                        key={category}
+                        variant={isSelected ? 'default' : 'ghost'}
+                        onClick={() => setSelectedCategory(isSelected ? null : category)}
+                        className={cn(
+                          "w-full justify-start gap-3 h-12",
+                          isSelected && "bg-cyan-500 hover:bg-cyan-600 text-white"
+                        )}
+                      >
+                        {config.icon}
+                        <span>{config.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <div className="flex-1">
+
+            {/* Services List */}
+            {Object.entries(groupedServices).map(([category, categoryServices]) => (
+              <div key={category} className="mb-8">
+                <h2 className="text-xl font-bold mb-4 capitalize">
+                  {categoryConfig[category as ServiceCategory]?.label || category.replace('_', ' ')}
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {categoryServices.map((service) => {
+                    const isInCart = isServiceInCart(service.id);
+                    const isExpanded = expandedServices.has(service.id);
+                    const hasAddOns = addOnServices.some(addOn => 
+                      !addOn.parent_service_id || addOn.parent_service_id === service.id
+                    );
+                    
+                    return (
+                      <Card
+                        key={service.id}
+                        className={cn(
+                          "p-4 transition-all duration-200",
+                          isInCart 
+                            ? "border-cyan-500 bg-cyan-50/50 shadow-sm" 
+                            : "border-border hover:shadow-sm"
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            {/* Service Name Row - Clickable on mobile only */}
+                            <div 
+                              className="flex items-center gap-2 lg:cursor-default cursor-pointer group"
+                              onClick={() => window.innerWidth < 1024 && toggleDescription(service.id)}
+                            >
+                              <h4 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
+                                {service.name}
+                              </h4>
+                              {hasAddOns && (
+                                <Badge variant="secondary" className="text-[0.65rem] bg-gray-50 text-gray-400 border-gray-200 opacity-60">
+                                  Add On
+                                </Badge>
+                              )}
+                              {service.description && (
+                                <ChevronDown 
+                                  className={cn(
+                                    "h-4 w-4 text-muted-foreground transition-transform duration-200 lg:hidden",
+                                    isExpanded && "rotate-180"
+                                  )}
+                                />
+                              )}
+                            </div>
+
+                            {/* Inline Price Display */}
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="font-bold text-foreground">💵 ${service.price_cash.toFixed(2)}</span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="font-bold text-foreground">💳 ${service.price_card.toFixed(2)}</span>
+                              <span className="text-[0.7rem] text-muted-foreground ml-1">⏱️ {service.duration_minutes}min</span>
+                            </div>
+
+                            {/* Description - Always visible on desktop, collapsible on mobile */}
                             {service.description && (
-                              <ChevronDown 
-                                className={cn(
-                                  "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                                  isExpanded && "rotate-180"
-                                )}
-                              />
+                              <div className={cn(
+                                "text-sm text-muted-foreground pt-2",
+                                "lg:block", // Always show on desktop
+                                !isExpanded && "hidden lg:block", // Hide on mobile unless expanded
+                                isExpanded && "animate-accordion-down" // Animate on mobile
+                              )}>
+                                {service.description}
+                              </div>
                             )}
                           </div>
 
-                          {/* Inline Price Display */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="font-bold text-foreground">💵 ${service.price_cash.toFixed(2)}</span>
-                      <span className="text-muted-foreground">•</span>
-                      <span className="font-bold text-foreground">💳 ${service.price_card.toFixed(2)}</span>
-                      <span className="text-[0.7rem] text-muted-foreground ml-1">⏱️ {service.duration_minutes}min</span>
-                    </div>
-
-                          {/* Collapsible Description */}
-                          {isExpanded && service.description && (
-                            <div className="text-sm text-gray-600 pt-2 animate-accordion-down">
-                              {service.description}
-                            </div>
-                          )}
+                          {/* Action Button */}
+                          <div className="flex-shrink-0">
+                            {isInCart ? (
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => handleRemoveService(service.id)}
+                                className="h-12 w-12 rounded-full bg-red-500 hover:bg-red-600"
+                              >
+                                <X className="h-5 w-5" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="default"
+                                size="icon"
+                                onClick={() => handleAddService(service)}
+                                className="h-12 w-12 rounded-full bg-cyan-500 hover:bg-cyan-600"
+                              >
+                                <Plus className="h-5 w-5" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-
-                        {/* Action Button */}
-                        <div className="flex-shrink-0">
-                          {isInCart ? (
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              onClick={() => handleRemoveService(service.id)}
-                              className="h-12 w-12 rounded-full bg-red-500 hover:bg-red-600"
-                            >
-                              <X className="h-5 w-5" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="default"
-                              size="icon"
-                              onClick={() => handleAddService(service)}
-                              className="h-12 w-12 rounded-full bg-cyan-500 hover:bg-cyan-600"
-                            >
-                              <Plus className="h-5 w-5" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                      </Card>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {filteredServices.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No services found matching your search.</p>
-            </div>
-          )}
+            {filteredServices.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No services found matching your search.</p>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
