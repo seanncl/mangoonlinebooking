@@ -267,10 +267,18 @@ export default function TimeSelection() {
           </div>
           <button
             onClick={() => setCartOpen(true)}
-            className="flex-shrink-0 hover:text-primary transition-colors cursor-pointer"
+            className="relative flex-shrink-0 hover:text-primary transition-colors cursor-pointer"
             aria-label="View cart"
           >
             <ShoppingBag className="h-5 w-5 text-muted-foreground hover:text-primary" />
+            {cart.length > 0 && (
+              <Badge 
+                variant="default" 
+                className="absolute -top-2 -right-2 h-4 min-w-4 px-1 flex items-center justify-center text-[10px] font-semibold"
+              >
+                {cart.length}
+              </Badge>
+            )}
           </button>
         </div>
 
