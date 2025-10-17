@@ -93,6 +93,14 @@ export default function TimeSelection() {
   const staffCount = new Set(cart.map(item => item.staffId).filter(Boolean)).size;
   const hasMultipleStaff = staffCount > 1;
 
+  // Helper function to format date as YYYY-MM-DD in local timezone
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Pre-load unavailable dates for next 30 days on mount
   useEffect(() => {
     const preloadUnavailableDates = async () => {
@@ -105,14 +113,20 @@ export default function TimeSelection() {
       // Check next 30 days
       for (let i = 0; i < 30; i++) {
         const checkDate = addDays(today, i);
+        const dateStr = formatDateLocal(checkDate);
+        
+        console.log('Preloading date:', dateStr);
+        
         try {
           const response = await bookingAPI.checkAvailability({
             locationId: selectedLocation.id,
-            date: checkDate.toISOString().split('T')[0],
+            date: dateStr,
             staffIds: [],
             totalDuration,
             startAllSameTime
           });
+          
+          console.log('Available slots for', dateStr, ':', response.data?.availableSlots.length);
           
           if (response.success && response.data?.availableSlots.length === 0) {
             dates.push(checkDate);
@@ -166,14 +180,21 @@ export default function TimeSelection() {
     setLoadingSlots(true);
     setSlotsError(null);
     try {
+      const dateStr = formatDateLocal(date);
+      
+      console.log('Checking availability for date:', dateStr);
+      
       const staffIds = cart.map(item => item.staffId).filter(Boolean) as string[];
       const response = await bookingAPI.checkAvailability({
         locationId: selectedLocation.id,
-        date: date.toISOString().split('T')[0],
+        date: dateStr,
         staffIds,
         totalDuration,
         startAllSameTime
       });
+      
+      console.log('Response:', response.data);
+      
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to check availability');
       }

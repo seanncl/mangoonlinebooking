@@ -326,8 +326,8 @@ export const mockTimeSlots: Record<string, string[]> = {
 export const mockUnavailableDates: string[] = [
   // Format: YYYY-MM-DD
   // Add some dates that should show as unavailable
-  '2025-10-18', // Saturday - fully booked
-  '2025-10-22', // Wednesday - staff training day
-  '2025-10-25', // Saturday - fully booked
-  '2025-11-01', // Saturday - fully booked
+  '2025-10-19', // Saturday - fully booked (Oct 19, 2 days from now)
+  '2025-10-23', // Wednesday - staff training day
+  '2025-10-26', // Sunday - fully booked
+  '2025-11-02', // Sunday - fully booked
 ];
