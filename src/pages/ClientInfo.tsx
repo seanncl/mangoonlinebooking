@@ -528,15 +528,6 @@ export default function ClientInfo() {
                     'Complete Booking'
                   )}
                 </Button>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => handleCollectInfo(true)}
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  Continue as Guest
-                </Button>
               </CardContent>
             </Card>
           </>
