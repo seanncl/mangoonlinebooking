@@ -11,7 +11,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("p-3 pointer-events-auto", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
@@ -36,7 +36,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         day_today: "bg-accent text-accent-foreground font-bold ring-2 ring-primary ring-offset-1",
         day_outside:
           "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-        day_disabled: "text-muted-foreground opacity-50 line-through cursor-not-allowed",
+        day_disabled: "text-muted-foreground/40 opacity-40 line-through decoration-2 decoration-destructive/60 bg-muted/30 cursor-not-allowed hover:bg-muted/30 hover:text-muted-foreground/40",
         day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
         day_hidden: "invisible",
         ...classNames,
