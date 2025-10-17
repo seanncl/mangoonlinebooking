@@ -243,10 +243,25 @@ export default function TimeSelection() {
     <div className="min-h-screen flex flex-col bg-background">
       <BookingHeader title="Select Date & Time" />
 
-      <main className="flex-1 container px-4 py-6 pb-24 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Time Selection */}
-          <div className="lg:col-span-2 space-y-6">
+      <main className="flex-1 container px-4 py-6 pb-24 max-w-4xl">
+        {/* Compact Booking Summary */}
+        <div className="flex flex-wrap items-center gap-3 p-3 mb-4 bg-muted/50 rounded-lg text-sm">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{totalDuration} min</span>
+          </div>
+          {hasMultipleStaff && (
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{staffCount} staff</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {cart.length} {cart.length === 1 ? 'service' : 'services'}
+            </Badge>
+          </div>
+        </div>
 
         {/* Start Same Time Toggle (for multiple staff) */}
         {hasMultipleStaff && <Card className="mb-6">
@@ -444,76 +459,6 @@ export default function TimeSelection() {
                 </div>
               </>}
           </div>}
-          </div>
-          
-          {/* Right Column - Cart Summary */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Your Cart</span>
-                    <Badge variant="secondary">{cart.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {cart.map((cartItem, index) => {
-                    const serviceDuration = cartItem.service.duration_minutes;
-                    const addOnsDuration = cartItem.addOns.reduce((sum, addOn) => sum + addOn.duration_minutes, 0);
-                    const totalItemDuration = serviceDuration + addOnsDuration;
-                    const itemPrice = cartItem.service.price_cash + cartItem.addOns.reduce((sum, addOn) => sum + addOn.price_cash, 0);
-                    
-                    return (
-                      <div key={`${cartItem.service.id}-${index}`} className="p-3 bg-muted/50 rounded-lg space-y-2">
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{cartItem.service.name}</h4>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {serviceDuration} min · ${cartItem.service.price_cash.toFixed(2)}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {cartItem.addOns.length > 0 && (
-                          <div className="pl-3 border-l-2 border-primary/20 space-y-1">
-                            {cartItem.addOns.map((addOn) => (
-                              <div key={addOn.id} className="text-xs text-muted-foreground">
-                                + {addOn.name} ({addOn.duration_minutes} min, ${addOn.price_cash.toFixed(2)})
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>{totalItemDuration} min total</span>
-                          </div>
-                          <span className="text-sm font-medium">${itemPrice.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  
-                  <div className="pt-4 border-t space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Total Duration</span>
-                      <span className="font-medium">{totalDuration} min</span>
-                    </div>
-                    <div className="flex justify-between items-center text-lg">
-                      <span className="font-semibold">Total</span>
-                      <span className="font-semibold text-primary">
-                        ${cart.reduce((sum, item) => 
-                          sum + item.service.price_cash + item.addOns.reduce((s, a) => s + a.price_cash, 0), 0
-                        ).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
       </main>
 
       <BookingFooter onNext={handleNext} nextLabel="Continue" nextDisabled={isNextDisabled} />
