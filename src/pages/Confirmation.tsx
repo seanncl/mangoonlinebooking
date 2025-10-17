@@ -1,18 +1,19 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookingHeader } from '@/components/layout/BookingHeader';
-import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useBooking } from '@/context/BookingContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { bookingAPI } from '@/services/booking-api';
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, Clock, MapPin, Mail, Phone, Shield, Star, CreditCard, Lock } from 'lucide-react';
+import { MapPin, Calendar, Clock, CreditCard, Phone, Mail, Shield, Star, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
+import { BookingHeader } from '@/components/layout/BookingHeader';
+import { BookingFooter } from '@/components/layout/BookingFooter';
 import { useToast } from '@/hooks/use-toast';
-import { bookingAPI } from '@/services/booking-api';
+import { PaymentSheet } from '@/components/booking/PaymentSheet';
+import { mockStaff } from '@/services/booking-api/mock-data';
 
 export default function Confirmation() {
   const navigate = useNavigate();
@@ -29,28 +30,28 @@ export default function Confirmation() {
 
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+  const [paymentAdded, setPaymentAdded] = useState(false);
+  const [saveCard, setSaveCard] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState({
     cardNumber: '',
-    expiry: '',
+    expiryDate: '',
     cvv: '',
     cardholderName: '',
   });
-  const [paymentErrors, setPaymentErrors] = useState({
-    cardNumber: '',
-    expiry: '',
-    cvv: '',
-    cardholderName: '',
-  });
+  const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
 
-  const hasDepositPolicy = selectedLocation?.has_deposit_policy;
+  const hasDepositPolicy = selectedLocation?.has_deposit_policy || false;
   const balanceDue = cartTotal - depositAmount;
 
-  const formatCardNumber = (value: string) => {
-    const cleaned = value.replace(/\s/g, '');
-    const chunks = cleaned.match(/.{1,4}/g) || [];
-    return chunks.join(' ');
+  // Helper to get staff name
+  const getStaffName = (staffId?: string) => {
+    if (!staffId) return null;
+    const staff = mockStaff.find((s) => s.id === staffId);
+    return staff ? staff.first_name : null;
   };
 
+  // Validation functions
   const validateCardNumber = (value: string) => {
     const cleaned = value.replace(/\s/g, '');
     if (!cleaned) return 'Card number is required';
@@ -59,19 +60,19 @@ export default function Confirmation() {
     return '';
   };
 
-  const validateExpiry = (value: string) => {
+  const validateExpiryDate = (value: string) => {
     if (!value) return 'Expiry date is required';
-    const [month, year] = value.split('/').map(v => v.trim());
-    if (!month || !year) return 'Use MM/YY format';
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length !== 4) return 'Use MMYY format';
     
-    const monthNum = parseInt(month);
-    const yearNum = parseInt(year);
+    const month = parseInt(cleaned.slice(0, 2));
+    const year = parseInt(cleaned.slice(2, 4));
     const currentYear = new Date().getFullYear() % 100;
     const currentMonth = new Date().getMonth() + 1;
     
-    if (monthNum > 12 || monthNum < 1) return 'Invalid month';
-    if (yearNum < currentYear) return 'Card is expired';
-    if (yearNum === currentYear && monthNum < currentMonth) return 'Card is expired';
+    if (month > 12 || month < 1) return 'Invalid month';
+    if (year < currentYear) return 'Card is expired';
+    if (year === currentYear && month < currentMonth) return 'Card is expired';
     return '';
   };
 
@@ -88,32 +89,12 @@ export default function Confirmation() {
     return '';
   };
 
-  const handlePaymentInputChange = (field: string, value: string) => {
-    let formattedValue = value;
-    
-    if (field === 'cardNumber') {
-      formattedValue = formatCardNumber(value.replace(/\D/g, '').slice(0, 16));
-    } else if (field === 'expiry') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 4);
-      if (cleaned.length >= 2) {
-        formattedValue = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
-      } else {
-        formattedValue = cleaned;
-      }
-    } else if (field === 'cvv') {
-      formattedValue = value.replace(/\D/g, '').slice(0, 4);
-    }
-    
-    setPaymentDetails(prev => ({ ...prev, [field]: formattedValue }));
-    setPaymentErrors(prev => ({ ...prev, [field]: '' }));
-  };
-
   const validatePaymentForm = () => {
     if (!hasDepositPolicy) return true;
 
-    const errors = {
+    const errors: Record<string, string> = {
       cardNumber: validateCardNumber(paymentDetails.cardNumber),
-      expiry: validateExpiry(paymentDetails.expiry),
+      expiryDate: validateExpiryDate(paymentDetails.expiryDate),
       cvv: validateCVV(paymentDetails.cvv),
       cardholderName: validateCardholderName(paymentDetails.cardholderName),
     };
@@ -122,7 +103,21 @@ export default function Confirmation() {
     return !Object.values(errors).some(error => error !== '');
   };
 
+  const handlePaymentSheetConfirm = () => {
+    if (!validatePaymentForm()) {
+      return;
+    }
+    setPaymentAdded(true);
+    setPaymentSheetOpen(false);
+    toast({
+      title: 'Payment Method Added',
+      description: 'Your card has been securely saved.',
+    });
+  };
+
+  // Main booking handler
   const handleBookNow = async () => {
+    // 1. Check policy acceptance FIRST
     if (!policyAccepted) {
       toast({
         title: 'Policy Not Accepted',
@@ -132,7 +127,19 @@ export default function Confirmation() {
       return;
     }
 
-    if (!validatePaymentForm()) {
+    // 2. Check payment is added if deposit required
+    if (hasDepositPolicy && !paymentAdded) {
+      toast({
+        title: 'Payment Required',
+        description: 'Please add a payment card for the deposit.',
+        variant: 'destructive',
+      });
+      setPaymentSheetOpen(true);
+      return;
+    }
+
+    // 3. Validate payment form
+    if (hasDepositPolicy && !validatePaymentForm()) {
       toast({
         title: 'Invalid Payment Details',
         description: 'Please check your payment information.',
@@ -149,6 +156,7 @@ export default function Confirmation() {
     }
 
     try {
+      // [API INTEGRATION POINT]
       // Create booking via API
       const response = await bookingAPI.createBooking({
         customer: customer!,
@@ -169,11 +177,11 @@ export default function Confirmation() {
         description: `Your confirmation number is ${response.data.confirmation_number}`,
       });
 
-      navigate('/success', { 
-        state: { 
+      navigate('/success', {
+        state: {
           confirmationNumber: response.data.confirmation_number,
-          bookingId: response.data.booking_id 
-        } 
+          bookingId: response.data.booking_id,
+        },
       });
     } catch (error: any) {
       console.error('Booking error:', error);
@@ -187,24 +195,21 @@ export default function Confirmation() {
     }
   };
 
-  const isBookingDisabled = !policyAccepted || isProcessing;
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <BookingHeader title="Confirm Booking" />
 
       <main className="flex-1 container max-w-2xl px-4 py-6 pb-24">
         {/* Booking Summary */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Booking Summary</h2>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/services')}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+        </div>
+
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Booking Summary</span>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/services')}>
-                Edit
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-4">
             {/* Location */}
             <div className="flex items-start gap-3">
               <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -214,7 +219,16 @@ export default function Confirmation() {
               </div>
             </div>
 
+            <Separator />
+
             {/* Date & Time */}
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-muted-foreground">Date & Time</span>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/time')}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
+
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground" />
               <p className="font-medium">
@@ -222,41 +236,33 @@ export default function Confirmation() {
               </p>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <p className="font-medium">{selectedTime}</p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/time')}>
-                Edit
-              </Button>
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <p className="font-medium">{selectedTime}</p>
             </div>
 
             <Separator />
 
-            {/* Services */}
-            <div className="space-y-3">
-              {cart.map((item, index) => (
-                <div key={item.service.id} className="space-y-2">
-                  <div className="flex justify-between">
-                    <div>
-                      <p className="font-medium">{item.service.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.service.duration_minutes} min
-                      </p>
-                    </div>
-                    <p className="font-medium">${item.service.price_card.toFixed(2)}</p>
-                  </div>
-                  {item.addOns.map((addOn) => (
-                    <div key={addOn.id} className="flex justify-between pl-4 text-sm">
-                      <p className="text-muted-foreground">+ {addOn.name}</p>
-                      <p>${(addOn.price_card - addOn.discount_when_bundled).toFixed(2)}</p>
-                    </div>
-                  ))}
-                  {index < cart.length - 1 && <Separator className="mt-3" />}
+            {/* Services with Staff */}
+            {cart.map((item, index) => (
+              <div key={index} className="flex justify-between py-2">
+                <div>
+                  <p className="font-medium">{item.service.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.service.duration_minutes} min
+                    {item.staffId && ` • with ${getStaffName(item.staffId)}`}
+                  </p>
+                  {item.addOns.length > 0 && (
+                    <ul className="text-xs text-muted-foreground mt-1 ml-4">
+                      {item.addOns.map((addOn) => (
+                        <li key={addOn.id}>+ {addOn.name}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              ))}
-            </div>
+                <p className="font-medium">${item.service.price_card.toFixed(2)}</p>
+              </div>
+            ))}
 
             <Separator />
 
@@ -266,212 +272,182 @@ export default function Confirmation() {
                 <span>Total</span>
                 <span>${cartTotal.toFixed(2)}</span>
               </div>
-              {hasDepositPolicy && (
-                <>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Deposit Due Today ({selectedLocation.deposit_percentage}%)</span>
-                    <span>${depositAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Balance Due at Salon</span>
-                    <span>${balanceDue.toFixed(2)}</span>
-                  </div>
-                </>
-              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Payment Details - Only show if deposit required */}
-        {hasDepositPolicy && (
-          <Card className="mb-6 border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Payment Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Deposit Summary */}
-              <div className="bg-primary-light p-4 rounded-lg space-y-1">
-                <p className="text-sm text-muted-foreground">Deposit Due Today</p>
-                <p className="text-3xl font-bold text-primary">${depositAmount.toFixed(2)}</p>
-                <p className="text-sm text-muted-foreground">
-                  Balance at Salon: ${balanceDue.toFixed(2)}
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Card Information */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <div className="relative">
-                    <Input
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={paymentDetails.cardNumber}
-                      onChange={(e) => handlePaymentInputChange('cardNumber', e.target.value)}
-                      className={paymentErrors.cardNumber ? 'border-destructive' : ''}
-                      maxLength={19}
-                    />
-                    <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                  {paymentErrors.cardNumber && (
-                    <p className="text-sm text-destructive mt-1">{paymentErrors.cardNumber}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="expiry">Expiry Date</Label>
-                    <Input
-                      id="expiry"
-                      placeholder="MM/YY"
-                      value={paymentDetails.expiry}
-                      onChange={(e) => handlePaymentInputChange('expiry', e.target.value)}
-                      className={paymentErrors.expiry ? 'border-destructive' : ''}
-                      maxLength={5}
-                    />
-                    {paymentErrors.expiry && (
-                      <p className="text-sm text-destructive mt-1">{paymentErrors.expiry}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="cvv">CVV</Label>
-                    <Input
-                      id="cvv"
-                      placeholder="123"
-                      type="password"
-                      value={paymentDetails.cvv}
-                      onChange={(e) => handlePaymentInputChange('cvv', e.target.value)}
-                      className={paymentErrors.cvv ? 'border-destructive' : ''}
-                      maxLength={4}
-                    />
-                    {paymentErrors.cvv && (
-                      <p className="text-sm text-destructive mt-1">{paymentErrors.cvv}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="cardholderName">Cardholder Name</Label>
-                  <Input
-                    id="cardholderName"
-                    placeholder="John Doe"
-                    value={paymentDetails.cardholderName}
-                    onChange={(e) => handlePaymentInputChange('cardholderName', e.target.value)}
-                    className={paymentErrors.cardholderName ? 'border-destructive' : ''}
-                  />
-                  {paymentErrors.cardholderName && (
-                    <p className="text-sm text-destructive mt-1">{paymentErrors.cardholderName}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Security Message */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                <Lock className="h-4 w-4" />
-                <span>Your payment information is secure and encrypted</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Customer Info */}
+        {/* Contact Information */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Contact Information</span>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/info')}>
-                Edit
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Contact Information</CardTitle>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/client-info')}>
+                <Pencil className="h-4 w-4" />
               </Button>
-            </CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {customer?.first_name && customer?.last_name && (
-              <div className="flex items-center gap-3">
-                <span className="font-medium">{customer.first_name} {customer.last_name}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">Phone</span>
               </div>
-            )}
-            <div className="flex items-center gap-3">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{customer?.email}</span>
+              <span className="text-sm text-muted-foreground">{customer?.phone}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{customer?.phone}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">Email</span>
+              </div>
+              <span className="text-sm text-muted-foreground">{customer?.email}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Cancellation Policy */}
+        {/* Confirmation Details */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Confirmation Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">Email confirmation</span>
+              </div>
+              <span className="text-sm text-muted-foreground">{customer?.email}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">SMS reminders</span>
+              </div>
+              <span className="text-sm text-muted-foreground">{customer?.phone}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cancellation Policy - MOVED BEFORE PAYMENT */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-base">Cancellation Policy</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
               {selectedLocation?.cancellation_policy}
             </p>
-            <div className="flex items-start gap-3">
+            <div className="flex items-start space-x-2">
               <Checkbox
                 id="policy"
                 checked={policyAccepted}
                 onCheckedChange={(checked) => setPolicyAccepted(checked as boolean)}
               />
-              <label
+              <Label
                 htmlFor="policy"
-                className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className="text-sm font-normal leading-relaxed cursor-pointer"
               >
                 I understand and accept the cancellation policy
-              </label>
+              </Label>
             </div>
           </CardContent>
         </Card>
 
-        {/* Payment Information */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">Payment Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {hasDepositPolicy ? (
-              <div className="space-y-2">
-                <p className="text-sm">
-                  A deposit of <span className="font-semibold">${depositAmount.toFixed(2)}</span> will be required to confirm your booking.
+        {/* Due Now Section */}
+        {hasDepositPolicy && (
+          <Card className="mb-6 border-2 border-primary">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground uppercase tracking-wide">
+                  Due Now
+                </p>
+                <p className="text-4xl font-bold text-primary">
+                  ${depositAmount.toFixed(2)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Please bring your card to check in. The remaining balance of ${balanceDue.toFixed(2)} will be collected at the salon.
+                  {selectedLocation?.deposit_percentage}% deposit required to confirm
                 </p>
+                <Separator className="my-4" />
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total at salon</span>
+                  <span className="font-medium">${balanceDue.toFixed(2)}</span>
+                </div>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Payment of ${cartTotal.toFixed(2)} will be collected at the salon.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Trust Signals */}
-        <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground mb-6">
-          <div className="flex items-center gap-1">
-            <Shield className="h-4 w-4" />
-            <span>Secure Payment</span>
+        {/* Payment Button/Card */}
+        {hasDepositPolicy && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-base">Payment Method</CardTitle>
+              <CardDescription>
+                Add a payment method to secure your booking
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!paymentAdded ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setPaymentSheetOpen(true)}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Add Payment Card
+                </Button>
+              ) : (
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">•••• {paymentDetails.cardNumber.slice(-4)}</p>
+                      <p className="text-xs text-muted-foreground">{paymentDetails.cardholderName}</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setPaymentSheetOpen(true)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Trust & Security */}
+        <div className="flex items-center justify-between px-4 py-3 bg-muted/50 rounded-lg mb-6">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-medium">Secure Payment</p>
+              <p className="text-xs text-muted-foreground">Your information is encrypted</p>
+            </div>
           </div>
           <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-current" />
-            <span>4.9 Rating</span>
+            <Star className="h-4 w-4 fill-primary text-primary" />
+            <span className="text-sm font-semibold">4.9</span>
           </div>
         </div>
       </main>
 
       <BookingFooter
+        onBack={() => navigate(-1)}
         onNext={handleBookNow}
-        nextLabel={isProcessing ? 'Processing...' : 'Book Now'}
-        nextDisabled={isBookingDisabled}
+        nextLabel={hasDepositPolicy ? `Confirm & Pay $${depositAmount.toFixed(2)}` : 'Confirm Booking'}
+        nextDisabled={!policyAccepted || isProcessing}
+      />
+
+      {/* Payment Sheet */}
+      <PaymentSheet
+        open={paymentSheetOpen}
+        onOpenChange={setPaymentSheetOpen}
+        depositAmount={depositAmount}
+        paymentDetails={paymentDetails}
+        paymentErrors={paymentErrors}
+        saveCard={saveCard}
+        onPaymentDetailsChange={setPaymentDetails}
+        onPaymentErrorsChange={setPaymentErrors}
+        onSaveCardChange={setSaveCard}
+        onConfirm={handlePaymentSheetConfirm}
       />
     </div>
   );
