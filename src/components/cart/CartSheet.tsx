@@ -305,7 +305,7 @@ export const CartSheet = ({ open: controlledOpen, onOpenChange }: CartSheetProps
                 navigate('/staff');
               }}
             >
-              Proceed to Select Staff
+              Continue to Select Time
             </Button>
           </div>
         )}
