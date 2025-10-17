@@ -342,8 +342,8 @@ export default function ServiceSelection() {
                             <div className="flex-1 space-y-2 min-w-0">
                               {/* Service Name Row */}
                               <div 
-                                className="flex items-center gap-2 cursor-pointer group"
-                                onClick={() => toggleDescription(service.id)}
+                                className="flex items-center gap-2 lg:cursor-default cursor-pointer group"
+                                onClick={() => window.innerWidth < 1024 && toggleDescription(service.id)}
                               >
                                 <h4 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors truncate">
                                   {service.name}
@@ -356,7 +356,7 @@ export default function ServiceSelection() {
                                 {service.description && (
                                   <ChevronDown 
                                     className={cn(
-                                      "h-4 w-4 text-muted-foreground transition-transform duration-200 flex-shrink-0",
+                                      "h-4 w-4 text-muted-foreground transition-transform duration-200 flex-shrink-0 lg:hidden",
                                       isExpanded && "rotate-180"
                                     )}
                                   />
@@ -371,9 +371,14 @@ export default function ServiceSelection() {
                                 <span className="text-[0.7rem] text-muted-foreground">⏱️ {service.duration_minutes}min</span>
                               </div>
 
-                              {/* Collapsible Description */}
-                              {isExpanded && service.description && (
-                                <div className="text-sm text-muted-foreground pt-2 animate-accordion-down">
+                              {/* Description - Always visible on desktop, collapsible on mobile */}
+                              {service.description && (
+                                <div className={cn(
+                                  "text-sm text-muted-foreground pt-2",
+                                  "lg:block",
+                                  !isExpanded && "hidden lg:block",
+                                  isExpanded && "animate-accordion-down"
+                                )}>
                                   {service.description}
                                 </div>
                               )}
