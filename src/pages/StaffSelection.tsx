@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Calendar, ShoppingBag, Users } from 'lucide-react';
+import { Search, Calendar, ShoppingBag, Users, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -13,16 +13,19 @@ import { useBooking } from '@/context/BookingContext';
 import { bookingAPI } from '@/services/booking-api';
 import { Staff } from '@/types/booking';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export default function StaffSelection() {
   const navigate = useNavigate();
-  const { selectedLocation, cart, updateCartItemStaff, bookingFlowType, setPreferredStaff, cartCount } = useBooking();
+  const { selectedLocation, cart, updateCartItemStaff, bookingFlowType, setPreferredStaff, preferredStaffIds, addPreferredStaff, removePreferredStaff, cartCount } = useBooking();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleStaff, setScheduleStaff] = useState<Staff | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -87,9 +90,19 @@ export default function StaffSelection() {
     const staffMember = staff.find(s => s.id === staffId);
     if (!staffMember) return;
 
-    // If staff-first flow, store preferred staff and go to services
+    // Multi-select mode
+    if (multiSelectMode && bookingFlowType === 'staff-first') {
+      if (selectedStaffIds.includes(staffId)) {
+        setSelectedStaffIds(selectedStaffIds.filter(id => id !== staffId));
+      } else {
+        setSelectedStaffIds([...selectedStaffIds, staffId]);
+      }
+      return;
+    }
+
+    // If staff-first flow (single select), store preferred staff and go to services
     if (bookingFlowType === 'staff-first') {
-      setPreferredStaff(staffId);
+      setPreferredStaff([staffId]);
       navigate('/services');
       return;
     }
@@ -99,6 +112,20 @@ export default function StaffSelection() {
       updateCartItemStaff(item.service.id, staffId);
     });
     navigate('/time');
+  };
+
+  const handleContinueMultiSelect = () => {
+    if (selectedStaffIds.length === 0) {
+      toast.error('Please select at least one staff member');
+      return;
+    }
+    setPreferredStaff(selectedStaffIds);
+    navigate('/services');
+  };
+
+  const toggleMultiSelect = () => {
+    setMultiSelectMode(!multiSelectMode);
+    setSelectedStaffIds([]);
   };
 
   const handleNoPreference = () => {
@@ -171,11 +198,26 @@ export default function StaffSelection() {
 
           {/* Staff Selection Section */}
           <div className="space-y-4">
-            <div>
-              <h1 className="text-lg font-bold mb-1">Choose Your Technician</h1>
-              <p className="text-xs text-muted-foreground">
-                Choose who you'd like to perform your service
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-bold mb-1">Choose Your Technician</h1>
+                <p className="text-xs text-muted-foreground">
+                  {multiSelectMode && bookingFlowType === 'staff-first' 
+                    ? 'Select multiple technicians for your services' 
+                    : 'Choose who you\'d like to perform your service'}
+                </p>
+              </div>
+              {bookingFlowType === 'staff-first' && (
+                <Button
+                  variant={multiSelectMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={toggleMultiSelect}
+                  className="gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  {multiSelectMode ? 'Single Select' : 'Multi-Select'}
+                </Button>
+              )}
             </div>
 
             {/* Search */}
@@ -234,13 +276,29 @@ export default function StaffSelection() {
             <div className="space-y-3">
               {filteredStaff.map((member) => {
                 const statusConfig = getStatusConfig(member.status);
+                const isSelected = multiSelectMode && selectedStaffIds.includes(member.id);
                 return (
                   <Card
                     key={member.id}
                     onClick={() => handleSelectStaff(member.id)}
-                    className="p-4 transition-all cursor-pointer hover:shadow-md rounded-2xl bg-card border"
+                    className={cn(
+                      "p-4 transition-all cursor-pointer hover:shadow-md rounded-2xl bg-card border",
+                      isSelected && "border-primary bg-primary/5"
+                    )}
                   >
                     <div className="flex items-center gap-3">
+                      {/* Checkbox for multi-select mode */}
+                      {multiSelectMode && bookingFlowType === 'staff-first' && (
+                        <div className="flex-shrink-0">
+                          <div className={cn(
+                            "w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors",
+                            isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                          )}>
+                            {isSelected && <Check className="h-4 w-4 text-primary-foreground" />}
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Avatar - Use photo if available, fallback to emoji */}
                       <div className="flex-shrink-0">
                         {member.photo_url ? (
@@ -311,7 +369,12 @@ export default function StaffSelection() {
         </div>
       </main>
 
-      <BookingFooter hideNext />
+      <BookingFooter 
+        hideNext={!multiSelectMode || bookingFlowType !== 'staff-first'}
+        onNext={handleContinueMultiSelect}
+        nextLabel={`Continue with ${selectedStaffIds.length} Technician${selectedStaffIds.length !== 1 ? 's' : ''}`}
+        nextDisabled={selectedStaffIds.length === 0}
+      />
       
       {/* Cart Sheet */}
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />

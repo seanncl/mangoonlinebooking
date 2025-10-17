@@ -4,7 +4,10 @@ import { BookingState, Location, CartService, Customer } from '@/types/booking';
 interface BookingContextType extends BookingState {
   setSelectedLocation: (location: Location | undefined) => void;
   setBookingFlowType: (type: 'service-first' | 'staff-first' | undefined) => void;
-  setPreferredStaff: (staffId: string | undefined) => void;
+  setPreferredStaff: (staffIds: string[]) => void;
+  addPreferredStaff: (staffId: string) => void;
+  removePreferredStaff: (staffId: string) => void;
+  clearPreferredStaff: () => void;
   addToCart: (item: CartService) => void;
   removeFromCart: (serviceId: string) => void;
   updateCartItemStaff: (serviceId: string, staffId: string | undefined) => void;
@@ -27,6 +30,7 @@ const STORAGE_KEY = 'mango-booking-state';
 
 const initialState: BookingState = {
   cart: [],
+  preferredStaffIds: [],
   startAllSameTime: true,
   serviceOrder: [],
   phoneVerified: false,
@@ -61,8 +65,26 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setState(prev => ({ ...prev, bookingFlowType: type }));
   };
 
-  const setPreferredStaff = (staffId: string | undefined) => {
-    setState(prev => ({ ...prev, preferredStaffId: staffId }));
+  const setPreferredStaff = (staffIds: string[]) => {
+    setState(prev => ({ ...prev, preferredStaffIds: staffIds }));
+  };
+
+  const addPreferredStaff = (staffId: string) => {
+    setState(prev => ({
+      ...prev,
+      preferredStaffIds: [...(prev.preferredStaffIds || []), staffId],
+    }));
+  };
+
+  const removePreferredStaff = (staffId: string) => {
+    setState(prev => ({
+      ...prev,
+      preferredStaffIds: (prev.preferredStaffIds || []).filter(id => id !== staffId),
+    }));
+  };
+
+  const clearPreferredStaff = () => {
+    setState(prev => ({ ...prev, preferredStaffIds: [] }));
   };
 
   const addToCart = (item: CartService) => {
@@ -145,6 +167,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setSelectedLocation,
         setBookingFlowType,
         setPreferredStaff,
+        addPreferredStaff,
+        removePreferredStaff,
+        clearPreferredStaff,
         addToCart,
         removeFromCart,
         updateCartItemStaff,

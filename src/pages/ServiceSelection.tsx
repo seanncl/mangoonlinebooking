@@ -26,7 +26,7 @@ const categoryConfig: Record<ServiceCategory, { label: string; icon: React.React
 
 export default function ServiceSelection() {
   const navigate = useNavigate();
-  const { selectedLocation, addToCart, cart, bookingFlowType, preferredStaffId, removeFromCart, cartCount } = useBooking();
+  const { selectedLocation, addToCart, cart, bookingFlowType, preferredStaffIds, removeFromCart, cartCount, updateCartItemStaff } = useBooking();
   const [services, setServices] = useState<Service[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -37,7 +37,7 @@ export default function ServiceSelection() {
   const [addOnsDialogOpen, setAddOnsDialogOpen] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [expandedAddOns, setExpandedAddOns] = useState<Set<string>>(new Set());
-  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<Staff[] | null>(null);
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -50,12 +50,12 @@ export default function ServiceSelection() {
   // Load selected staff details in staff-first flow
   useEffect(() => {
     const loadSelectedStaff = async () => {
-      if (bookingFlowType === 'staff-first' && preferredStaffId && selectedLocation) {
+      if (bookingFlowType === 'staff-first' && preferredStaffIds && preferredStaffIds.length > 0 && selectedLocation) {
         try {
           const response = await bookingAPI.getStaff(selectedLocation.id);
           if (response.success && response.data) {
-            const staff = response.data.find(s => s.id === preferredStaffId);
-            setSelectedStaff(staff || null);
+            const staffMembers = response.data.filter(s => preferredStaffIds.includes(s.id));
+            setSelectedStaff(staffMembers.length > 0 ? staffMembers : null);
           }
         } catch (error) {
           console.error('Error loading staff:', error);
@@ -66,7 +66,7 @@ export default function ServiceSelection() {
     };
 
     loadSelectedStaff();
-  }, [bookingFlowType, preferredStaffId, selectedLocation]);
+  }, [bookingFlowType, preferredStaffIds, selectedLocation]);
 
   const loadServices = async () => {
     if (!selectedLocation) return;
@@ -114,11 +114,11 @@ export default function ServiceSelection() {
       setSelectedAddOns([]);
       setAddOnsDialogOpen(true);
     } else {
-      // Auto-assign preferredStaffId in staff-first flow
+      // Auto-assign staffId in staff-first flow if only one staff selected
       addToCart({ 
         service, 
         addOns: [], 
-        staffId: bookingFlowType === 'staff-first' ? preferredStaffId : undefined 
+        staffId: bookingFlowType === 'staff-first' && preferredStaffIds && preferredStaffIds.length === 1 ? preferredStaffIds[0] : undefined 
       });
       toast.success(`Added ${service.name}`);
     }
@@ -128,11 +128,11 @@ export default function ServiceSelection() {
     if (!selectedService) return;
 
     const addOns = addOnServices.filter(s => selectedAddOns.includes(s.id));
-    // Auto-assign preferredStaffId in staff-first flow
+    // Auto-assign staffId in staff-first flow if only one staff selected
     addToCart({ 
       service: selectedService, 
       addOns,
-      staffId: bookingFlowType === 'staff-first' ? preferredStaffId : undefined
+      staffId: bookingFlowType === 'staff-first' && preferredStaffIds && preferredStaffIds.length === 1 ? preferredStaffIds[0] : undefined
     });
     toast.success(`Added ${selectedService.name}${addOns.length > 0 ? ` with ${addOns.length} add-on(s)` : ''}`);
     setAddOnsDialogOpen(false);
@@ -151,18 +151,29 @@ export default function ServiceSelection() {
       toast.error('Please select at least one service');
       return;
     }
-    
-    // If staff-first flow, verify all services have staff assigned
-    if (bookingFlowType === 'staff-first') {
-      const unassignedServices = cart.filter(item => !item.staffId);
-      if (unassignedServices.length > 0) {
-        console.error('Staff-first flow error: Services added without staff assignment', unassignedServices);
-        toast.error('Error: Staff assignment missing. Please contact support.');
-        return;
+
+    // For staff-first flow
+    if (bookingFlowType === 'staff-first' && preferredStaffIds && preferredStaffIds.length > 0) {
+      // If only one staff selected, auto-assign to all services
+      if (preferredStaffIds.length === 1) {
+        cart.forEach(item => {
+          if (!item.staffId) {
+            updateCartItemStaff(item.service.id, preferredStaffIds[0]);
+          }
+        });
+        navigate('/time');
+      } else {
+        // Multiple staff selected, navigate to staff assignment page
+        navigate('/staff-assignment');
       }
-      navigate('/time');
-    } else {
+      return;
+    }
+
+    // Service-first flow or no staff selected
+    if (bookingFlowType === 'service-first') {
       navigate('/staff');
+    } else {
+      navigate('/time');
     }
   };
 
@@ -211,22 +222,49 @@ export default function ServiceSelection() {
       <BookingHeader />
 
       {/* Selected Staff Banner - Staff-First Flow */}
-      {bookingFlowType === 'staff-first' && selectedStaff && (
+      {bookingFlowType === 'staff-first' && selectedStaff && selectedStaff.length > 0 && (
         <div className="bg-primary/5 border-b border-border sticky top-12 z-30">
           <div className="container max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="text-3xl leading-none">
-                  {selectedStaff.avatar_emoji}
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">
-                    {selectedStaff.first_name} {selectedStaff.last_name}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Your selected technician
-                  </div>
-                </div>
+                {selectedStaff.length === 1 ? (
+                  <>
+                    <div className="text-3xl leading-none">
+                      {selectedStaff[0].avatar_emoji}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-foreground">
+                        {selectedStaff[0].first_name} {selectedStaff[0].last_name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Your selected technician
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex -space-x-2">
+                      {selectedStaff.slice(0, 3).map((staff) => (
+                        <div key={staff.id} className="text-2xl leading-none bg-background rounded-full border-2 border-background">
+                          {staff.avatar_emoji}
+                        </div>
+                      ))}
+                      {selectedStaff.length > 3 && (
+                        <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-semibold">
+                          +{selectedStaff.length - 3}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-foreground">
+                        {selectedStaff.length} Technicians Selected
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Assign them to specific services next
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               <Button
                 variant="outline"

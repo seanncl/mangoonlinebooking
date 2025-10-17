@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 export default function StaffAssignment() {
   const navigate = useNavigate();
-  const { selectedLocation, cart, updateCartItemStaff } = useBooking();
+  const { selectedLocation, cart, updateCartItemStaff, preferredStaffIds } = useBooking();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +35,13 @@ export default function StaffAssignment() {
         throw new Error(response.error || 'Failed to load staff');
       }
 
-      setStaff(response.data);
+      // Filter to preferred staff if coming from staff-first multi-select flow
+      const allStaff = response.data;
+      if (preferredStaffIds && preferredStaffIds.length > 1) {
+        setStaff(allStaff.filter(s => preferredStaffIds.includes(s.id)));
+      } else {
+        setStaff(allStaff);
+      }
     } catch (error) {
       console.error('Error loading staff:', error);
       toast.error('Failed to load staff');

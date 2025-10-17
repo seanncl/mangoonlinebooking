@@ -73,7 +73,7 @@ export interface Customer {
 export interface BookingState {
   selectedLocation?: Location;
   bookingFlowType?: 'service-first' | 'staff-first';
-  preferredStaffId?: string;
+  preferredStaffIds?: string[]; // Changed to array for multi-select
   cart: CartService[];
   selectedDate?: Date;
   selectedTime?: string;
