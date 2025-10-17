@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
+import { CartSheet } from '@/components/cart/CartSheet';
 import { useBooking } from '@/context/BookingContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +85,7 @@ export default function TimeSelection() {
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [unavailableDates, setUnavailableDates] = useState<Date[]>([]);
   const [loadingUnavailableDates, setLoadingUnavailableDates] = useState(true);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const totalDuration = cart.reduce((sum, item) => {
     const serviceDuration = item.service.duration_minutes;
@@ -263,7 +265,13 @@ export default function TimeSelection() {
               </Badge>
             </div>
           </div>
-          <ShoppingBag className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+          <button
+            onClick={() => setCartOpen(true)}
+            className="flex-shrink-0 hover:text-primary transition-colors cursor-pointer"
+            aria-label="View cart"
+          >
+            <ShoppingBag className="h-5 w-5 text-muted-foreground hover:text-primary" />
+          </button>
         </div>
 
         {/* Start Same Time Toggle (for multiple staff) */}
@@ -465,6 +473,8 @@ export default function TimeSelection() {
       </main>
 
       <BookingFooter onNext={handleNext} nextLabel="Continue" nextDisabled={isNextDisabled} />
+      
+      <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </div>
   </TooltipProvider>;
 }
