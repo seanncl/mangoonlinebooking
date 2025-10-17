@@ -326,15 +326,16 @@ export default function Confirmation() {
               {showFullPolicy ? 'Show less' : 'Read complete policy'}
               <ChevronDown className={`h-4 w-4 transition-transform ${showFullPolicy ? 'rotate-180' : ''}`} />
             </button>
-            <div className="flex items-start space-x-2 pt-2">
+            <div className="flex items-start space-x-3 p-4 mt-2 bg-primary/5 border-2 border-primary/20 rounded-lg hover:border-primary/40 transition-colors">
               <Checkbox
                 id="policy"
                 checked={policyAccepted}
                 onCheckedChange={(checked) => setPolicyAccepted(checked as boolean)}
+                className="mt-0.5"
               />
               <Label
                 htmlFor="policy"
-                className="text-sm font-normal leading-relaxed cursor-pointer"
+                className="text-sm font-medium leading-relaxed cursor-pointer"
               >
                 I understand and agree to the cancellation policy
               </Label>
