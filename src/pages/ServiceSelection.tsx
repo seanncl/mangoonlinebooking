@@ -237,7 +237,7 @@ export default function ServiceSelection() {
                         {selectedStaff[0].first_name} {selectedStaff[0].last_name}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Your selected technician
+                        Your selected staff member
                       </div>
                     </div>
                   </>
@@ -257,7 +257,7 @@ export default function ServiceSelection() {
                     </div>
                     <div>
                       <div className="font-semibold text-foreground">
-                        {selectedStaff.length} Technicians Selected
+                        {selectedStaff.length} Staff Members Selected
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Assign them to specific services next

@@ -199,7 +199,7 @@ export const CartSheet = ({ open: controlledOpen, onOpenChange }: CartSheetProps
                     <div className="pr-6 space-y-1">
                       <div className="font-semibold text-base">{item.service.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        Technician: Any Available Technician
+                        Staff: Any Available Staff Member
                       </div>
                       {item.addOns && item.addOns.length > 0 && (
                         <div className="text-sm text-muted-foreground pt-1">

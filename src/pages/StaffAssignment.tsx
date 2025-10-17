@@ -66,7 +66,7 @@ export default function StaffAssignment() {
 
   const handleContinue = () => {
     if (!allServicesAssigned) {
-      toast.error('Please assign a technician to all services');
+      toast.error('Please assign a staff member to all services');
       return;
     }
     navigate('/time');
@@ -101,7 +101,7 @@ export default function StaffAssignment() {
           {/* Header Section */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-3">
-              <h1 className="text-3xl font-bold">Assign Technicians</h1>
+              <h1 className="text-3xl font-bold">Assign Staff Members</h1>
               <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
                 <User className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">
@@ -110,7 +110,7 @@ export default function StaffAssignment() {
               </div>
             </div>
             <p className="text-muted-foreground">
-              Choose your preferred technician for each service or let us assign the best available
+              Choose your preferred staff member for each service or let us assign the best available
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export default function StaffAssignment() {
                       {/* Staff Selector */}
                       <div className="ml-14">
                         <label className="text-sm font-medium text-foreground mb-2 block">
-                          Select Technician
+                          Select Staff Member
                         </label>
                         <Select
                           value={item.staffId || ''}
@@ -187,7 +187,7 @@ export default function StaffAssignment() {
                           <SelectTrigger className={`w-full h-14 ${
                             isAssigned ? 'border-success/50' : ''
                           }`}>
-                            <SelectValue placeholder="Choose a technician...">
+                            <SelectValue placeholder="Choose a staff member...">
                               {assignedStaff && (
                                 <div className="flex items-center gap-3">
                                   <span className="text-2xl">{assignedStaff.avatar_emoji}</span>
@@ -210,7 +210,7 @@ export default function StaffAssignment() {
                                 <div className="flex-1">
                                   <div className="font-semibold text-base">Any Available</div>
                                   <div className="text-xs text-muted-foreground">
-                                    We will assign the best available technician
+                                    We will assign the best available staff member
                                   </div>
                                 </div>
                               </div>
@@ -218,7 +218,7 @@ export default function StaffAssignment() {
                             
                             {/* Divider */}
                             <div className="px-2 py-1 bg-muted/50">
-                              <p className="text-xs text-muted-foreground font-medium">Or choose a specific technician</p>
+                              <p className="text-xs text-muted-foreground font-medium">Or choose a specific staff member</p>
                             </div>
                             
                             {/* Staff Options */}
@@ -261,7 +261,7 @@ export default function StaffAssignment() {
                     Assignment Required
                   </p>
                   <p className="text-sm text-amber-800">
-                    Please select a technician for all services to continue. You can choose specific staff or select "Any Available" for each service.
+                    Please select a staff member for all services to continue. You can choose specific staff or select "Any Available" for each service.
                   </p>
                 </div>
               </div>
@@ -287,7 +287,7 @@ export default function StaffAssignment() {
 
       <BookingFooter
         onNext={handleContinue}
-        nextLabel={allServicesAssigned ? "Continue to Time Selection" : "Select Technicians to Continue"}
+        nextLabel={allServicesAssigned ? "Continue to Time Selection" : "Select Staff Members to Continue"}
         nextDisabled={!allServicesAssigned}
       />
     </div>

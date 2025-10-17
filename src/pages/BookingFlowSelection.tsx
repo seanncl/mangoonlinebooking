@@ -68,7 +68,7 @@ export default function BookingFlowSelection() {
                 <div>
                   <h3 className="text-2xl font-bold mb-2">Pick a Service</h3>
                   <p className="text-muted-foreground">
-                    Browse our services and we'll match you with available technicians
+                    Browse our services and we'll match you with available staff
                   </p>
                 </div>
                 <Button 
@@ -94,9 +94,9 @@ export default function BookingFlowSelection() {
                   <Users className="h-10 w-10 text-accent" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">Pick a Technician</h3>
+                  <h3 className="text-2xl font-bold mb-2">Pick a Staff Member</h3>
                   <p className="text-muted-foreground">
-                    Choose your favorite technician and see their available services
+                    Choose your favorite staff member and see their available services
                   </p>
                 </div>
                 <Button 
@@ -108,7 +108,7 @@ export default function BookingFlowSelection() {
                     handleSelectFlow('staff-first');
                   }}
                 >
-                  Choose Technician
+                  Choose Staff Member
                 </Button>
               </div>
             </Card>

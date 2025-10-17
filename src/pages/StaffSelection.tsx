@@ -200,10 +200,10 @@ export default function StaffSelection() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-lg font-bold mb-1">Choose Your Technician</h1>
+                <h1 className="text-lg font-bold mb-1">Choose Your Staff Member</h1>
                 <p className="text-xs text-muted-foreground">
                   {multiSelectMode && bookingFlowType === 'staff-first' 
-                    ? 'Select multiple technicians for your services' 
+                    ? 'Select multiple staff members for your services' 
                     : 'Choose who you\'d like to perform your service'}
                 </p>
               </div>
@@ -245,7 +245,7 @@ export default function StaffSelection() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-base">Choose Multiple Staff</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      Select a different technician for each service
+                      Select a different staff member for each service
                     </p>
                   </div>
                 </div>
@@ -265,7 +265,7 @@ export default function StaffSelection() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-base">No Preference</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      First available technician
+                      First available staff member
                     </p>
                   </div>
                 </div>
@@ -372,7 +372,7 @@ export default function StaffSelection() {
       <BookingFooter 
         hideNext={!multiSelectMode || bookingFlowType !== 'staff-first'}
         onNext={handleContinueMultiSelect}
-        nextLabel={`Continue with ${selectedStaffIds.length} Technician${selectedStaffIds.length !== 1 ? 's' : ''}`}
+        nextLabel={`Continue with ${selectedStaffIds.length} Staff Member${selectedStaffIds.length !== 1 ? 's' : ''}`}
         nextDisabled={selectedStaffIds.length === 0}
       />
       
