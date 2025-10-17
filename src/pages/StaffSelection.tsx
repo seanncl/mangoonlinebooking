@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BookingHeader } from '@/components/layout/BookingHeader';
 import { BookingFooter } from '@/components/layout/BookingFooter';
 import { CartSheet } from '@/components/cart/CartSheet';
@@ -21,8 +20,6 @@ export default function StaffSelection() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showDecisionDialog, setShowDecisionDialog] = useState(false);
-  const [selectedStaffMember, setSelectedStaffMember] = useState<Staff | null>(null);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleStaff, setScheduleStaff] = useState<Staff | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -97,32 +94,11 @@ export default function StaffSelection() {
       return;
     }
 
-    // Service-first flow: check if multiple services
-    if (cart.length > 1) {
-      setSelectedStaffMember(staffMember);
-      setShowDecisionDialog(true);
-    } else {
-      // Single service: assign and go to time
-      updateCartItemStaff(cart[0].service.id, staffId);
-      navigate('/time');
-    }
-  };
-
-  const handleAssignToAll = () => {
-    if (!selectedStaffMember) return;
+    // Service-first flow: assign staff to all services and go to time
     cart.forEach(item => {
-      updateCartItemStaff(item.service.id, selectedStaffMember.id);
+      updateCartItemStaff(item.service.id, staffId);
     });
-    setShowDecisionDialog(false);
     navigate('/time');
-  };
-
-  const handleDifferentTechnicians = () => {
-    if (!selectedStaffMember) return;
-    // Assign selected staff to first service
-    updateCartItemStaff(cart[0].service.id, selectedStaffMember.id);
-    setShowDecisionDialog(false);
-    navigate('/staff-assignment');
   };
 
   const handleNoPreference = () => {
@@ -344,49 +320,6 @@ export default function StaffSelection() {
         open={scheduleModalOpen}
         onOpenChange={setScheduleModalOpen}
       />
-
-      {/* Multi-Staff Decision Dialog */}
-      <Dialog open={showDecisionDialog} onOpenChange={setShowDecisionDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign Technician</DialogTitle>
-            <DialogDescription>
-              You have selected {selectedStaffMember?.first_name} {selectedStaffMember?.last_name}. 
-              Would you like them to perform all your services?
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 py-4">
-            <Button
-              variant="default"
-              className="w-full justify-start h-auto p-4"
-              onClick={handleAssignToAll}
-            >
-              <div className="text-left">
-                <div className="font-semibold">
-                  Yes, assign {selectedStaffMember?.first_name} to all services
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  All {cart.length} services will be performed by the same technician
-                </div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto p-4"
-              onClick={handleDifferentTechnicians}
-            >
-              <div className="text-left">
-                <div className="font-semibold">I want different technicians</div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  Choose a technician for each service individually
-                </div>
-              </div>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
