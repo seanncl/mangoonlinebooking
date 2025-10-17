@@ -92,7 +92,12 @@ export default function ServiceSelection() {
       setSelectedAddOns([]);
       setAddOnsDialogOpen(true);
     } else {
-      addToCart({ service, addOns: [] });
+      // Auto-assign preferredStaffId in staff-first flow
+      addToCart({ 
+        service, 
+        addOns: [], 
+        staffId: bookingFlowType === 'staff-first' ? preferredStaffId : undefined 
+      });
       toast.success(`Added ${service.name}`);
     }
   };
@@ -101,7 +106,12 @@ export default function ServiceSelection() {
     if (!selectedService) return;
 
     const addOns = addOnServices.filter(s => selectedAddOns.includes(s.id));
-    addToCart({ service: selectedService, addOns });
+    // Auto-assign preferredStaffId in staff-first flow
+    addToCart({ 
+      service: selectedService, 
+      addOns,
+      staffId: bookingFlowType === 'staff-first' ? preferredStaffId : undefined
+    });
     toast.success(`Added ${selectedService.name}${addOns.length > 0 ? ` with ${addOns.length} add-on(s)` : ''}`);
     setAddOnsDialogOpen(false);
     setSelectedService(null);
@@ -119,8 +129,15 @@ export default function ServiceSelection() {
       toast.error('Please select at least one service');
       return;
     }
-    // If staff-first flow, skip staff selection (already chosen)
+    
+    // If staff-first flow, verify all services have staff assigned
     if (bookingFlowType === 'staff-first') {
+      const unassignedServices = cart.filter(item => !item.staffId);
+      if (unassignedServices.length > 0) {
+        console.error('Staff-first flow error: Services added without staff assignment', unassignedServices);
+        toast.error('Error: Staff assignment missing. Please contact support.');
+        return;
+      }
       navigate('/time');
     } else {
       navigate('/staff');

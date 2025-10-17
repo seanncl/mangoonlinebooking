@@ -210,23 +210,25 @@ export default function StaffSelection() {
               </Card>
             )}
 
-            {/* No Preference Option */}
-            <Card
-              onClick={handleNoPreference}
-              className="p-4 cursor-pointer hover:shadow-md transition-all rounded-2xl bg-card border"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 text-4xl leading-none">
-                  🎲
+            {/* No Preference Option - Only show in service-first flow */}
+            {bookingFlowType === 'service-first' && cart.length > 0 && (
+              <Card
+                onClick={handleNoPreference}
+                className="p-4 cursor-pointer hover:shadow-md transition-all rounded-2xl bg-card border"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 text-4xl leading-none">
+                    🎲
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-base">No Preference</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      First available technician
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-base">No Preference</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    First available technician
-                  </p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            )}
 
             {/* Staff Grid */}
             <div className="space-y-3">

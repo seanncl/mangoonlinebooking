@@ -194,7 +194,7 @@ export default function StaffAssignment() {
                               )}
                             </SelectValue>
                           </SelectTrigger>
-                          <SelectContent className="z-50">
+                          <SelectContent className="bg-background z-[100]">
                             {/* Any Available Option - Featured */}
                             <SelectItem value="any-available" className="bg-primary/5">
                               <div className="flex items-center gap-3 py-2">
