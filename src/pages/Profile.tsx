@@ -100,7 +100,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <BookingHeader title="Profile" />
+      <BookingHeader title="Profile" showClose={true} />
       
       <div className="container mx-auto px-4 py-8 max-w-md">
         <form onSubmit={handleSubmit} className="space-y-6">
