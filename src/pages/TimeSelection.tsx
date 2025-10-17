@@ -9,8 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Clock, Users, Sparkles, AlertCircle, GripVertical, Info, Phone, Calendar as CalendarIcon } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Clock, Users, Sparkles, AlertCircle, GripVertical, Phone, Calendar as CalendarIcon } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { bookingAPI } from '@/services/booking-api';
 import { Button } from '@/components/ui/button';
@@ -239,7 +239,8 @@ export default function TimeSelection() {
     navigate('/info');
   };
   const isNextDisabled = !selectedDate || !selectedTime;
-  return <div className="min-h-screen flex flex-col bg-background">
+  return <TooltipProvider>
+    <div className="min-h-screen flex flex-col bg-background">
       <BookingHeader title="Select Date & Time" />
 
       <main className="flex-1 container px-4 py-6 pb-24 max-w-4xl">
@@ -386,24 +387,16 @@ export default function TimeSelection() {
                   : 'bg-muted/20 border-muted/50 text-muted-foreground cursor-not-allowed opacity-40'
               )}>
                         {time}
-                        {isBestFit && isAvailable && <HoverCard>
-                            <HoverCardTrigger asChild>
+                        {isBestFit && isAvailable && <Tooltip>
+                            <TooltipTrigger asChild>
                               <Badge variant={isSelected ? "secondary" : "default"} className="absolute -top-2 -right-2 text-[9px] px-1 py-0 h-4 bg-primary text-primary-foreground cursor-help">
                                 ✨ Best
                               </Badge>
-                            </HoverCardTrigger>
-                            <HoverCardContent className="w-80">
-                              <div className="flex gap-3">
-                                <Info className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-medium mb-1">About Best Fit Times</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Best Fit times help optimize salon scheduling and availability
-                                  </p>
-                                </div>
-                              </div>
-                            </HoverCardContent>
-                          </HoverCard>}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Recommended times with optimal availability</p>
+                            </TooltipContent>
+                          </Tooltip>}
                       </button>;
             };
             return <div className="space-y-5">
@@ -469,5 +462,6 @@ export default function TimeSelection() {
       </main>
 
       <BookingFooter onNext={handleNext} nextLabel="Continue" nextDisabled={isNextDisabled} />
-    </div>;
+    </div>
+  </TooltipProvider>;
 }
