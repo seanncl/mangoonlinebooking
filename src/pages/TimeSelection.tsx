@@ -10,14 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Clock, Users, Sparkles, AlertCircle, GripVertical, Info, Phone } from 'lucide-react';
-import { format } from 'date-fns';
+import { Clock, Users, Sparkles, AlertCircle, GripVertical, Info, Phone, Calendar as CalendarIcon } from 'lucide-react';
+import { format, addDays, startOfToday } from 'date-fns';
 import { bookingAPI } from '@/services/booking-api';
 import { Button } from '@/components/ui/button';
 import { HorizontalDatePicker } from '@/components/booking/HorizontalDatePicker';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { cn } from '@/lib/utils';
 interface SortableServiceItemProps {
   serviceId: string;
   index: number;
@@ -82,6 +83,8 @@ export default function TimeSelection() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [unavailableDates, setUnavailableDates] = useState<Date[]>([]);
+  const [loadingUnavailableDates, setLoadingUnavailableDates] = useState(true);
+
   const totalDuration = cart.reduce((sum, item) => {
     const serviceDuration = item.service.duration_minutes;
     const addOnsDuration = item.addOns.reduce((addOnSum, addOn) => addOnSum + addOn.duration_minutes, 0);
@@ -89,6 +92,42 @@ export default function TimeSelection() {
   }, 0);
   const staffCount = new Set(cart.map(item => item.staffId).filter(Boolean)).size;
   const hasMultipleStaff = staffCount > 1;
+
+  // Pre-load unavailable dates for next 30 days on mount
+  useEffect(() => {
+    const preloadUnavailableDates = async () => {
+      if (!selectedLocation) return;
+      
+      setLoadingUnavailableDates(true);
+      const dates: Date[] = [];
+      const today = startOfToday();
+      
+      // Check next 30 days
+      for (let i = 0; i < 30; i++) {
+        const checkDate = addDays(today, i);
+        try {
+          const response = await bookingAPI.checkAvailability({
+            locationId: selectedLocation.id,
+            date: checkDate.toISOString().split('T')[0],
+            staffIds: [],
+            totalDuration,
+            startAllSameTime
+          });
+          
+          if (response.success && response.data?.availableSlots.length === 0) {
+            dates.push(checkDate);
+          }
+        } catch (error) {
+          console.error('Error checking date:', checkDate, error);
+        }
+      }
+      
+      setUnavailableDates(dates);
+      setLoadingUnavailableDates(false);
+    };
+
+    preloadUnavailableDates();
+  }, [selectedLocation, totalDuration, startAllSameTime]);
 
   // Drag-and-drop sensors
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, {
@@ -184,20 +223,23 @@ export default function TimeSelection() {
 
       <main className="flex-1 container px-4 py-6 pb-24 max-w-4xl">
         {/* Compact Booking Summary */}
-        <Card className="mb-4">
-          <CardContent className="pt-6 pb-6">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{totalDuration} minutes</span>
-              </div>
-              {hasMultipleStaff && <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{staffCount} staff members</span>
-                </div>}
+        <div className="flex flex-wrap items-center gap-3 p-3 mb-4 bg-muted/50 rounded-lg text-sm">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{totalDuration} min</span>
+          </div>
+          {hasMultipleStaff && (
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{staffCount} staff</span>
             </div>
-          </CardContent>
-        </Card>
+          )}
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {cart.length} {cart.length === 1 ? 'service' : 'services'}
+            </Badge>
+          </div>
+        </div>
 
         {/* Start Same Time Toggle (for multiple staff) */}
         {hasMultipleStaff && <Card className="mb-6">
@@ -256,6 +298,19 @@ export default function TimeSelection() {
           <HorizontalDatePicker selectedDate={localDate} onDateSelect={handleDateSelect} unavailableDates={unavailableDates} />
         </div>
 
+        {/* Empty State - No Date Selected */}
+        {!localDate && (
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <CalendarIcon className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Select a Date</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Choose a date above to see available appointment times
+            </p>
+          </div>
+        )}
+
         {/* Time Slots */}
         {localDate && <div className="space-y-6">
             <h2 className="text-xl font-semibold">
@@ -264,10 +319,10 @@ export default function TimeSelection() {
             {loadingSlots ? <div className="space-y-4">
                 <div>
                   <Skeleton className="h-4 w-20 mb-3" />
-                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                     {Array.from({
                 length: 12
-              }).map((_, i) => <Skeleton key={i} className="h-11 w-full" />)}
+              }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                   </div>
                 </div>
               </div> : slotsError ? <Alert>
@@ -301,7 +356,14 @@ export default function TimeSelection() {
               const isAvailable = availableSlots.includes(time);
               const isBestFit = bestFitSlots.includes(time);
               const isSelected = selectedTime === time;
-              return <button key={time} onClick={() => isAvailable && handleTimeSelect(time)} disabled={!isAvailable} className={`relative px-3 py-2.5 rounded-xl border-2 text-xs font-medium transition-all ${isSelected ? 'bg-primary text-primary-foreground border-primary shadow-md' : isAvailable ? 'bg-background hover:bg-accent hover:border-accent-foreground/20 border-border' : 'bg-muted/30 border-muted text-muted-foreground cursor-not-allowed opacity-50'}`}>
+              return <button key={time} onClick={() => isAvailable && handleTimeSelect(time)} disabled={!isAvailable} className={cn(
+                "relative px-3 py-3 rounded-xl border-2 text-sm font-medium transition-all touch-manipulation min-h-[48px]",
+                isSelected 
+                  ? 'bg-primary text-primary-foreground border-primary shadow-lg scale-[1.02]' 
+                  : isAvailable 
+                  ? 'bg-background hover:bg-accent hover:border-primary/30 hover:shadow-md border-border' 
+                  : 'bg-muted/20 border-muted/50 text-muted-foreground cursor-not-allowed opacity-40'
+              )}>
                         {time}
                         {isBestFit && isAvailable && <HoverCard>
                             <HoverCardTrigger asChild>
@@ -332,7 +394,7 @@ export default function TimeSelection() {
                               {morningSlots.filter(t => availableSlots.includes(t)).length} available
                             </span>
                           </div>
-                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                             {morningSlots.map(renderTimeSlot)}
                           </div>
                         </div>}
@@ -345,7 +407,7 @@ export default function TimeSelection() {
                               {afternoonSlots.filter(t => availableSlots.includes(t)).length} available
                             </span>
                           </div>
-                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                             {afternoonSlots.map(renderTimeSlot)}
                           </div>
                         </div>}
@@ -358,7 +420,7 @@ export default function TimeSelection() {
                               {eveningSlots.filter(t => availableSlots.includes(t)).length} available
                             </span>
                           </div>
-                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                             {eveningSlots.map(renderTimeSlot)}
                           </div>
                         </div>}

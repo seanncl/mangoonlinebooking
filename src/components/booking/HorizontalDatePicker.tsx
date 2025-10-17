@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { format, addDays, startOfToday, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface HorizontalDatePickerProps {
   selectedDate?: Date;
@@ -21,12 +22,14 @@ export function HorizontalDatePicker({
 }: HorizontalDatePickerProps) {
   const [startDate, setStartDate] = useState(startOfToday());
   const [showFullCalendar, setShowFullCalendar] = useState(false);
+  const isMobile = useIsMobile();
 
-  // Generate 7 days starting from startDate (increased from 5 for more visibility)
-  const visibleDates = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
+  // Responsive: 5 days on mobile, 7 on desktop
+  const daysToShow = isMobile ? 5 : 7;
+  const visibleDates = Array.from({ length: daysToShow }, (_, i) => addDays(startDate, i));
 
   const handlePrevious = () => {
-    const newStartDate = addDays(startDate, -7);
+    const newStartDate = addDays(startDate, -daysToShow);
     // Don't go before today
     if (newStartDate >= startOfToday()) {
       setStartDate(newStartDate);
@@ -34,7 +37,7 @@ export function HorizontalDatePicker({
   };
 
   const handleNext = () => {
-    setStartDate(addDays(startDate, 7));
+    setStartDate(addDays(startDate, daysToShow));
   };
 
   const handleCalendarSelect = (date: Date | undefined) => {
@@ -102,7 +105,10 @@ export function HorizontalDatePicker({
       </div>
 
       {/* Date Cards */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className={cn(
+        "grid gap-2",
+        isMobile ? "grid-cols-5" : "grid-cols-7"
+      )}>
         {visibleDates.map((date) => {
           const isSelected = selectedDate && isSameDay(date, selectedDate);
           const isTodayDate = isToday(date);
@@ -114,31 +120,47 @@ export function HorizontalDatePicker({
               onClick={() => !unavailable && onDateSelect(date)}
               disabled={unavailable}
               className={cn(
-                "relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all",
-                "hover:border-primary/50",
+                "relative flex flex-col items-center justify-center rounded-xl border-2 transition-all touch-manipulation",
+                "min-h-[80px] sm:min-h-[88px]", // Better touch targets
                 isSelected
-                  ? "bg-primary border-primary text-primary-foreground shadow-lg"
+                  ? "bg-primary border-primary text-primary-foreground shadow-lg scale-[1.02]"
                   : unavailable
-                  ? "bg-muted/50 border-muted text-muted-foreground cursor-not-allowed opacity-50"
-                  : "bg-background border-border"
+                  ? "bg-muted/30 border-muted/50 cursor-not-allowed"
+                  : "bg-background border-border hover:border-primary/30 hover:shadow-md"
               )}
             >
-              <span className="text-xs font-medium mb-1">
+              {/* Day of week */}
+              <span className={cn(
+                "text-xs font-medium mb-1",
+                isSelected ? "text-primary-foreground/90" : "text-muted-foreground"
+              )}>
                 {format(date, 'EEE')}
               </span>
+              
+              {/* Date number */}
               <span className={cn(
-                "text-xl font-bold",
-                isSelected && "text-primary-foreground"
+                "text-2xl font-bold leading-none mb-1",
+                isSelected && "text-primary-foreground",
+                unavailable && "text-muted-foreground/60"
               )}>
                 {format(date, 'd')}
               </span>
-              {isTodayDate && !isSelected && (
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-medium">
+
+              {/* Today badge - show even when selected */}
+              {isTodayDate && (
+                <span className={cn(
+                  "text-[9px] px-1.5 py-0.5 rounded-full font-semibold",
+                  isSelected 
+                    ? "bg-primary-foreground/20 text-primary-foreground" 
+                    : "bg-primary/10 text-primary"
+                )}>
                   Today
                 </span>
               )}
+
+              {/* Unavailable indicator */}
               {unavailable && (
-                <span className="text-[10px] text-muted-foreground mt-1">
+                <span className="text-[9px] text-destructive font-medium mt-0.5">
                   Unavailable
                 </span>
               )}
