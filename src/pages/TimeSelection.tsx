@@ -168,7 +168,7 @@ export default function TimeSelection() {
         if (hour === 19 && minute > 0) break; // Stop at 7:00 PM
         const isPM = hour >= 12;
         const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-        const time = `${displayHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`;
+        const time = `${displayHour}:${minute.toString().padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`;
         slots.push(time);
       }
     }
