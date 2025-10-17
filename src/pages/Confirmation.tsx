@@ -304,28 +304,6 @@ export default function Confirmation() {
           </CardContent>
         </Card>
 
-        {/* Confirmation Details */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">Confirmation Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Email confirmation</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{customer?.email}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">SMS reminders</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{customer?.phone}</span>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Cancellation Policy - MOVED BEFORE PAYMENT */}
         <Card className="mb-6">
