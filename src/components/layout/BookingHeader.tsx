@@ -11,7 +11,7 @@ interface BookingHeaderProps {
   onClose?: () => void;
 }
 
-export const BookingHeader = ({ title, showClose = true, showProfile = true, onClose }: BookingHeaderProps) => {
+export const BookingHeader = ({ title, showClose = false, showProfile = true, onClose }: BookingHeaderProps) => {
   const navigate = useNavigate();
   const { selectedLocation } = useBooking();
 
