@@ -12,7 +12,7 @@ import { BookingFooter } from '@/components/layout/BookingFooter';
 import { CartSheet } from '@/components/cart/CartSheet';
 import { useBooking } from '@/context/BookingContext';
 import { bookingAPI } from '@/services/booking-api';
-import { Service, ServiceCategory } from '@/types/booking';
+import { Service, ServiceCategory, Staff } from '@/types/booking';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,7 @@ export default function ServiceSelection() {
   const [addOnsDialogOpen, setAddOnsDialogOpen] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [expandedAddOns, setExpandedAddOns] = useState<Set<string>>(new Set());
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 
   useEffect(() => {
     if (!selectedLocation) {
@@ -45,6 +46,27 @@ export default function ServiceSelection() {
     }
     loadServices();
   }, [selectedLocation, navigate]);
+
+  // Load selected staff details in staff-first flow
+  useEffect(() => {
+    const loadSelectedStaff = async () => {
+      if (bookingFlowType === 'staff-first' && preferredStaffId && selectedLocation) {
+        try {
+          const response = await bookingAPI.getStaff(selectedLocation.id);
+          if (response.success && response.data) {
+            const staff = response.data.find(s => s.id === preferredStaffId);
+            setSelectedStaff(staff || null);
+          }
+        } catch (error) {
+          console.error('Error loading staff:', error);
+        }
+      } else {
+        setSelectedStaff(null);
+      }
+    };
+
+    loadSelectedStaff();
+  }, [bookingFlowType, preferredStaffId, selectedLocation]);
 
   const loadServices = async () => {
     if (!selectedLocation) return;
@@ -187,6 +209,36 @@ export default function ServiceSelection() {
   return (
     <div className="min-h-screen flex flex-col">
       <BookingHeader />
+
+      {/* Selected Staff Banner - Staff-First Flow */}
+      {bookingFlowType === 'staff-first' && selectedStaff && (
+        <div className="bg-primary/5 border-b border-border sticky top-12 z-30">
+          <div className="container max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl leading-none">
+                  {selectedStaff.avatar_emoji}
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">
+                    {selectedStaff.first_name} {selectedStaff.last_name}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Your selected technician
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/staff')}
+              >
+                Change
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 pb-24">
         {/* Search Bar - Mobile and Desktop */}
